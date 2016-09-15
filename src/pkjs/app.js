@@ -30,6 +30,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
   console.log("From UI: " + JSON.stringify(dict));
   fetchLocation(dict[messageKeys.Place1], messageKeys.Place1, messageKeys.P1X, messageKeys.P1Y, messageKeys.ZoneOffset1, 1);
   fetchLocation(dict[messageKeys.Place2], messageKeys.Place2, messageKeys.P2X, messageKeys.P2Y, messageKeys.ZoneOffset2, 2);
+//   fetchLocation(dict[messageKeys.CurPlace], messageKeys.CurPlace, messageKeys.P_CUR_X, messageKeys.P_CUR_Y, 
+//                 messageKeys.ZoneOffsetCur, 3);
 });
 
 function doneTimeZone(timeZoneDataString, keyZone, reason, tryNum)
@@ -123,6 +125,13 @@ function httpGetAsync(theUrl, callback)
 
 function locationSuccess(pos) {
   var coordinates = pos.coords;
+  //dict[messageKeys.]
+  Pebble.sendAppMessage(dict, function(e) {
+      console.log('Sent update for current location');
+    }, function(e) {
+      console.log('Failed to send config data!');
+      console.log(JSON.stringify(e));
+    });
 }
 
 function locationError(err) {

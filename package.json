@@ -27,7 +27,11 @@
             "P2Y",
             "UpdateReason",
             "ZoneOffset1",
-            "ZoneOffset2"
+            "ZoneOffset2",
+            "ZoneOffsetCur",
+            "P_CUR_X",
+            "P_CUR_Y",
+            "CurPlace"
         ],
         "projectType": "native",
         "resources": {
