@@ -1,12 +1,23 @@
 #include <pebble.h>
 
+
+#define REDRAW_INTERVAL 15
+const uint16_t WIDTH = 144;
+const uint16_t HEIGHT = 72;
+const uint16_t radius = 8;
+
+static int redraw_counter = 500;
+
 static Window *s_window;	
 static Layer *map_layer;
 static Layer *pointer_layer;
-static GBitmap *map_color;
+static GBitmap *three_worlds;
+static GBitmap *image;
 static BitmapLayer *tmp_layer;
+
   
-const uint16_t radius = 8;
+
+
 
 struct place_descrition{
   Layer *place_layer;
@@ -36,6 +47,68 @@ static void send_message(void){
 	dict_write_end(iter);
   app_message_outbox_send();
 }
+
+//piece of code from:
+//davidfg4/pebble-day-night
+static void draw_earth() {
+  // ##### calculate the time
+#ifdef PBL_SDK_2
+  int now = (int)time(NULL) + time_offset;
+#else
+  int now = (int)time(NULL);
+#endif
+  float day_of_year; // value from 0 to 1 of progress through a year
+  float time_of_day; // value from 0 to 1 of progress through a day
+  // approx number of leap years since epoch
+  // = now / SECONDS_IN_YEAR * .24; (.24 = average rate of leap years)
+  int leap_years = (int)((float)now / 131487192.0);
+  // day_of_year is an estimate, but should be correct to within one day
+  day_of_year = now - (((int)((float)now / 31556926.0) * 365 + leap_years) * 86400);
+  day_of_year = day_of_year / 86400.0;
+  time_of_day = day_of_year - (int)day_of_year;
+  day_of_year = day_of_year / 365.0;
+  // ##### calculate the position of the sun
+  // left to right of world goes from 0 to 65536
+  int sun_x = (int)((float)TRIG_MAX_ANGLE * (1.0 - time_of_day));
+  // bottom to top of world goes from -32768 to 32768
+  // 0.2164 is march 20, the 79th day of the year, the march equinox
+  // Earth's inclination is 23.4 degrees, so sun should vary 23.4/90=.26 up and down
+  int sun_y = -sin_lookup((day_of_year - 0.2164) * TRIG_MAX_ANGLE) * .26 * .25;
+  // ##### draw the bitmap
+  int x, y;
+  for(x = 0; x < WIDTH; x++) {
+    int x_angle = (int)((float)TRIG_MAX_ANGLE * (float)x / (float)(WIDTH));
+    for(y = 0; y < HEIGHT; y++) {
+      int y_angle = (int)((float)TRIG_MAX_ANGLE * (float)y / (float)(HEIGHT * 2)) - TRIG_MAX_ANGLE/4;
+      // spherical law of cosines
+      float angle = ((float)sin_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);
+      angle = angle + ((float)cos_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(y_angle)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(sun_x - x_angle)/(float)TRIG_MAX_RATIO);
+#ifdef PBL_BW
+      int byte = y * gbitmap_get_bytes_per_row(image) + (int)(x / 8);
+      if ((angle < 0) ^ (0x1 & (((char *)gbitmap_get_data(world_bitmap))[byte] >> (x % 8)))) {
+        // white pixel
+        ((char *)gbitmap_get_data(image))[byte] = ((char *)gbitmap_get_data(image))[byte] | (0x1 << (x % 8));
+      } else {
+        // black pixel
+        ((char *)gbitmap_get_data(image))[byte] = ((char *)gbitmap_get_data(image))[byte] & ~(0x1 << (x % 8));
+      }
+#else
+      int byte = y * gbitmap_get_bytes_per_row(three_worlds) + x;
+      if (angle < 0) { // dark pixel
+        ((char *)gbitmap_get_data(three_worlds))[byte] = ((char *)gbitmap_get_data(three_worlds))[WIDTH*HEIGHT + byte];
+      } else { // light pixel
+        ((char *)gbitmap_get_data(three_worlds))[byte] = ((char *)gbitmap_get_data(three_worlds))[WIDTH*HEIGHT*2 + byte];
+      }
+#endif
+    }
+  }
+  layer_mark_dirty(map_layer);
+}
+
+static void draw_map(struct Layer *layer, GContext *ctx) {
+  graphics_draw_bitmap_in_rect(ctx, image, gbitmap_get_bounds(image));
+}
+//end of borrowed code
 
 static void switch_panels_if_required(){
   GRect rect1 = layer_get_frame(place1.place_layer);
@@ -132,6 +205,12 @@ static int16_t get_x_within_bounds(int16_t old_x, GRect bounds){
   return x;
 }
 
+static void graphics_draw_lines(GContext *gtx, GPoint start, GPoint end, int16_t end_x_range){
+  for (int16_t i = 0 ;i<=end_x_range; i+=2){
+    graphics_draw_line(gtx, start, GPoint(end.x + i, end.y));
+  }
+}
+
 static void draw_arrows(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_antialiased(ctx, true);
@@ -152,12 +231,9 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   int16_t x2_con = get_x_within_bounds(p2_m.x, layer_get_frame(place2.place_layer));
 
   //draw lines 1
-  graphics_draw_line(ctx, p1_m, GPoint(x1_con, y1_con));
-  graphics_draw_line(ctx, p1_m, GPoint(x1_con+radius, y1_con));
+  graphics_draw_lines(ctx, p1_m, GPoint(x1_con, y1_con), radius);
   //draw lines 2
-  graphics_draw_line(ctx, p2_m, GPoint(x2_con, y2_con));
-  graphics_draw_line(ctx, p2_m, GPoint(x2_con+radius, y2_con));
-
+  graphics_draw_lines(ctx, p2_m, GPoint(x2_con, y2_con), radius);
   
 }
 
@@ -211,17 +287,20 @@ static void destroy_place_layer(place_descr *place){
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
+  //TODO make ALL constants variable
 
-  GRect map_bounds = GRect(0, 48, bounds.size.w, 72);
+  GRect map_bounds = GRect(0, 48, WIDTH, HEIGHT);
   map_layer = layer_create(map_bounds);
-  //TODO make constants variable
+  layer_set_update_proc(map_layer, draw_map);
+
   layer_add_child(window_layer, map_layer);
+  //draw_earth();
   
   tmp_layer = bitmap_layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
   // Load the image
-  map_color = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_3_WORLDS);
-  bitmap_layer_set_bitmap(tmp_layer, map_color);
-  layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
+  three_worlds = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_3_WORLDS);
+  bitmap_layer_set_bitmap(tmp_layer, three_worlds);
+  //layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
   
   pointer_layer = layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
   layer_set_update_proc(pointer_layer, draw_arrows);
@@ -229,6 +308,8 @@ static void window_load(Window *window) {
   
   create_place_layer_default(&place1, 0, window_layer);
   create_place_layer_default(&place2, 120, window_layer);
+  
+  image = gbitmap_create_as_sub_bitmap(three_worlds, GRect(0, 0, WIDTH, HEIGHT));
 
 }
 
@@ -236,9 +317,13 @@ static void window_unload(Window *window) {
   destroy_place_layer(&place1);
   destroy_place_layer(&place2);
   bitmap_layer_destroy(tmp_layer);
-  gbitmap_destroy(map_color);
+  
+  
   layer_destroy(pointer_layer);
   layer_destroy(map_layer);
+  
+  gbitmap_destroy(three_worlds);
+  gbitmap_destroy(image);
 }
 
 static void update_time(place_descr *place, time_t *time){
@@ -247,6 +332,12 @@ static void update_time(place_descr *place, time_t *time){
                                           "%H:%M" : "%I:%M", tick_time);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place_name, place->watch_str); 
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
+  
+  redraw_counter++;
+  if (redraw_counter >= REDRAW_INTERVAL) {
+    draw_earth();
+    redraw_counter = 0;
+  }
 }
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
