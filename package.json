@@ -1,0 +1,55 @@
+{
+    "author": "cobxo3bot@gmail.com",
+    "dependencies": {
+        "pebble-clay": "^1.0.2"
+    },
+    "keywords": [],
+    "name": "multizone-earth",
+    "pebble": {
+        "capabilities": [
+            "location",
+            "configurable"
+        ],
+        "displayName": "Multizone-Earth",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "status",
+            "message",
+            "Place1",
+            "Place2",
+            "BackgroundColor",
+            "ForegroundColor",
+            "SecondTick",
+            "Animations",
+            "P1X",
+            "P1Y",
+            "P2X",
+            "P2Y",
+            "UpdateReason",
+            "ZoneOffset1",
+            "ZoneOffset2"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/three_worlds.png",
+                    "name": "IMAGE_3_WORLDS",
+                    "targetPlatforms": [
+                        "basalt"
+                    ],
+                    "type": "bitmap"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "basalt"
+        ],
+        "uuid": "4291749b-7408-4423-9677-4c5f721057de",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "0.1.0"
+}
