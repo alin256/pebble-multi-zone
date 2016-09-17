@@ -35,8 +35,10 @@ typedef struct place_descrition place_descr;
 
 static place_descr place1, place2, current;
 
-	
-//layers
+//this is a reference to botom place
+static Layer *bottom_place_layer;
+static bool condensing = true;
+
 
 // Write message to buffer & send
 static void send_message(void){
@@ -121,6 +123,12 @@ static void switch_panels_if_required(){
     layer_set_frame(place2.place_layer, rect1);
     layer_mark_dirty(window_get_root_layer(s_window));
   }
+  if (place1.y > place2.y){
+    bottom_place_layer = place1.place_layer;
+  }else{
+    bottom_place_layer = place2.place_layer;
+  }
+    
 }
 
 static void update_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
@@ -153,6 +161,13 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
 
 static void draw_place_bubble(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
+  //background
+  graphics_context_set_antialiased(ctx, false);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, bounds, radius, GCornersAll);
+  
+  //frame
   graphics_context_set_antialiased(ctx, true);
   graphics_context_set_stroke_color(ctx, GColorOrange);
   graphics_draw_round_rect(ctx, bounds, radius);
@@ -278,6 +293,7 @@ static void draw_floating_layer_to_left(struct Layer *layer, GContext *ctx){
   graphics_context_set_stroke_color(ctx, GColorOrange);
   graphics_draw_round_rect(ctx, bounds, radius);
   graphics_draw_round_rect(ctx, get_offset_rect_right(bounds.size.h, bounds.size.h, 2, bounds.size.w), radius-2);
+  graphics_draw_round_rect(ctx, get_offset_rect_right(bounds.size.h, bounds.size.h, radius-1, bounds.size.w), 1);
 }
 
 static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
@@ -298,6 +314,7 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
   graphics_context_set_stroke_color(ctx, GColorOrange);
   graphics_draw_round_rect(ctx, bounds, radius);
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
+  graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
 }
 
 static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
@@ -306,7 +323,11 @@ static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offs
   //TODO update only on suibstansial cahnges; make ifs
   place->x = x_t->value->int32;
   place->y = y_t->value->int32;
-  place->offset = offset_t->value->int32;
+  //convert coords
+  GPoint p_m = get_point_on_map(place->x, place->y, GSize(WIDTH, HEIGHT));
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Computed floating location %d, %d", (int) p_m.x, (int) p_m.y); 
+  //place->offset = offset_t->value->int32;
   
   //compare to place 1 and place 2
   if ((abs(place->x-place1.x)<radius/2 && abs(place->x-place1.x)<radius/2) ||
@@ -320,21 +341,23 @@ static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offs
   text_layer_set_text(place->place_time_layer, place->watch_str);
   
   GSize my_size = layer_get_bounds(place->place_layer).size;
-  int16_t new_top = place->y - my_size.h/2;
+  int16_t new_top = p_m.y - my_size.h/2;
   if (new_top<1){
     new_top = 1;
   }
   if (new_top>HEIGHT-1-my_size.h){
     new_top = HEIGHT-1-my_size.h;
   }
-
+  int16_t left_tmp = 0;
+    
   //deduce orientation:
-  if (place->x < WIDTH - my_size.w){
+  if (p_m.x < WIDTH - my_size.w){
     //normal oriention to the right
-    int16_t new_left = place->x - my_size.h/2;
+    int16_t new_left = p_m.x - my_size.h/2;
     if (new_left<1){
       new_left = 1;
     }
+    left_tmp = new_left;
     
     layer_set_frame(place->place_layer, GRect(new_left, new_top, my_size.w, my_size.h));
     layer_set_update_proc(place->place_layer, draw_floating_layer_to_right);
@@ -342,16 +365,18 @@ static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offs
     text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentLeft);
   }else{
     //reverse oriention to the left
-    int16_t new_left = place->x - (my_size.w - my_size.h/2);
+    int16_t new_left = p_m.x - (my_size.w - my_size.h/2);
     if (new_left>WIDTH-1-my_size.w){
       new_left = WIDTH-1-my_size.w;
     }
+    left_tmp = new_left;
     
     layer_set_frame(place->place_layer, GRect(new_left, new_top, my_size.w, my_size.h));
     layer_set_update_proc(place->place_layer, draw_floating_layer_to_left);
     layer_set_frame(text_layer_get_layer(place->place_time_layer), GRect(0, -1, my_size.w-radius*2, my_size.h));
     text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentRight);
   }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Left: %d; Top: %d", (int) left_tmp, (int) new_top); 
     
 }
 
@@ -385,11 +410,11 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       switch_panels_if_required();
       
       //updated place Curent
-//       city_t = dict_find(received, MESSAGE_KEY_CurPlace);
-//       offset_t = dict_find(received, MESSAGE_KEY_ZoneOffsetCur);
-//       x_t = dict_find(received, MESSAGE_KEY_P_CUR_X);
-//       y_t = dict_find(received, MESSAGE_KEY_P_CUR_Y);
-//       update_floating_place(&current, city_t, offset_t, x_t, y_t);
+      city_t = dict_find(received, MESSAGE_KEY_CurPlace);
+      offset_t = dict_find(received, MESSAGE_KEY_ZoneOffsetCur);
+      x_t = dict_find(received, MESSAGE_KEY_P_CUR_X);
+      y_t = dict_find(received, MESSAGE_KEY_P_CUR_Y);
+      update_floating_place(&current, city_t, offset_t, x_t, y_t);
 
     }
   }
@@ -441,6 +466,52 @@ static void destroy_place_layer(place_descr *place){
   layer_destroy(place->place_layer);
 }
 
+static void prv_unobstructed_will_change(GRect final_unobstructed_screen_area,
+void *context) {
+  // Get the total available screen real-estate
+  GRect bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_window));
+  if (bounds.size.h > final_unobstructed_screen_area.size.h){
+    condensing = true;
+  }else{
+    condensing = false;
+  }
+  
+  //GRect full_bounds = layer_get_bounds(window_get_root_layer(s_window));
+  //   if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+  //     // Screen is about to become obstructed, hide the date
+  //     layer_set_hidden(text_layer_get_layer(s_date_layer), true);
+  //   }
+}
+
+static void prv_unobstructed_change(AnimationProgress progress, void *context) {
+  // Get the total available screen real-estate
+  GRect bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_window));
+  //Get frame of bubbles
+  GRect bottom_bounds = layer_get_frame(bottom_place_layer);
+  
+  //move bottom layer
+  bottom_bounds.origin.y = bounds.size.h - bottom_bounds.size.h;
+  layer_set_frame(bottom_place_layer, bottom_bounds);
+  
+  //move map layer
+  GRect map_bounds = layer_get_frame(map_layer);
+  int32_t directed_progress;
+  if (condensing){
+    directed_progress = progress-ANIMATION_NORMALIZED_MIN;
+  }else{
+    directed_progress = ANIMATION_NORMALIZED_MAX - progress;
+  }
+  GRect floating_bounds = layer_get_frame(current.place_layer);
+  map_bounds.origin.y = bottom_bounds.size.h + 
+    (- floating_bounds.origin.y + 2)
+    *(directed_progress)/(ANIMATION_NORMALIZED_MAX-ANIMATION_NORMALIZED_MIN);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Animation progress: %d, directed: %d", (int) progress, (int)directed_progress);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "New y: %d", (int) map_bounds.origin.y);
+  layer_set_frame(map_layer, map_bounds);
+  
+}
+
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -465,12 +536,18 @@ static void window_load(Window *window) {
   
   create_place_layer_default(&place1, 0, window_layer);
   create_place_layer_default(&place2, 120, window_layer);
+  bottom_place_layer = place2.place_layer;
   
   create_place_layer_floating(&current, map_layer);
   layer_set_hidden(current.place_layer, true);
   
   image = gbitmap_create_as_sub_bitmap(three_worlds, GRect(0, 0, WIDTH, HEIGHT));
 
+  UnobstructedAreaHandlers handlers = {
+    .will_change = prv_unobstructed_will_change,
+    .change = prv_unobstructed_change
+  };
+  unobstructed_area_service_subscribe(handlers, NULL);
 }
 
 static void window_unload(Window *window) {
@@ -485,6 +562,9 @@ static void window_unload(Window *window) {
   
   gbitmap_destroy(three_worlds);
   gbitmap_destroy(image);
+  
+  //unobstructed_area_service_unsubscribe();
+  
 }
 
 static void update_time(place_descr *place, time_t *time){

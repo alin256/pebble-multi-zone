@@ -30,12 +30,13 @@ Pebble.addEventListener('webviewclosed', function(e) {
   console.log("From UI: " + JSON.stringify(dict));
   fetchLocation(dict[messageKeys.Place1], messageKeys.Place1, messageKeys.P1X, messageKeys.P1Y, messageKeys.ZoneOffset1, 1);
   fetchLocation(dict[messageKeys.Place2], messageKeys.Place2, messageKeys.P2X, messageKeys.P2Y, messageKeys.ZoneOffset2, 2);
-//   fetchLocation(dict[messageKeys.CurPlace], messageKeys.CurPlace, messageKeys.P_CUR_X, messageKeys.P_CUR_Y, 
-//                 messageKeys.ZoneOffsetCur, 3);
+  fetchLocation(dict[messageKeys.CurPlace], messageKeys.CurPlace, messageKeys.P_CUR_X, messageKeys.P_CUR_Y, 
+                 messageKeys.ZoneOffsetCur, 3);
 });
 
 function doneTimeZone(timeZoneDataString, keyZone, reason, tryNum)
 {
+    console.log("Recieved time zone: " + timeZoneDataString);
     var timeZoneData = JSON.parse(timeZoneDataString);
     console.log("Status time zone: " + JSON.stringify(timeZoneData));
     if (timeZoneData.status == "OK"){
@@ -123,33 +124,34 @@ function httpGetAsync(theUrl, callback)
 }
 
 
-function locationSuccess(pos) {
-  var coordinates = pos.coords;
-  //dict[messageKeys.]
-  Pebble.sendAppMessage(dict, function(e) {
-      console.log('Sent update for current location');
-    }, function(e) {
-      console.log('Failed to send config data!');
-      console.log(JSON.stringify(e));
-    });
-}
+// function locationSuccess(pos) {
+//   var coordinates = pos.coords;
+//   return;
+//   //dict[messageKeys.]
+//   Pebble.sendAppMessage(dict, function(e) {
+//       console.log('Sent update for current location');
+//     }, function(e) {
+//       console.log('Failed to send config data!');
+//       console.log(JSON.stringify(e));
+//     });
+// }
 
-function locationError(err) {
-  console.warn('location error (' + err.code + '): ' + err.message);
-}
+// function locationError(err) {
+//   console.warn('location error (' + err.code + '): ' + err.message);
+// }
 
-var locationOptions = {
-  //'enableHighAccuracy': false,
-  'timeout': 0, //do not update if not available
-  'maximumAge': 36000000
-};
+// var locationOptions = {
+//   //'enableHighAccuracy': false,
+//   'timeout': 0, //do not update if not available
+//   'maximumAge': 36000000
+// };
 
-Pebble.addEventListener('ready', function (e) {
-  console.log('connect!' + e.ready);
-  navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
-    locationOptions);
-  console.log(e.type);
-});
+// Pebble.addEventListener('ready', function (e) {
+//   console.log('connect!' + e.ready);
+//   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
+//     locationOptions);
+//   console.log(e.type);
+// });
 
 // Pebble.addEventListener('appmessage', function (e) {
 //   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
