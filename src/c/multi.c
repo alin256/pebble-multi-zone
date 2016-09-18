@@ -131,6 +131,8 @@ static void switch_panels_if_required(){
     
 }
 
+//TODO make update place with simple ints and use it for perisistent stoarage.
+
 static void update_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
   if (!(city_t && offset_t && x_t && y_t))
     return;
@@ -196,6 +198,17 @@ static void graphics_draw_lines(GContext *gtx, GPoint start, GPoint end, int16_t
   }
 }
 
+static void draw_number(GContext *ctx, GPoint middle, int16_t num){
+  GRect box =  GRect(middle.x - radius*3/2, middle.y -radius, 
+                                radius*3, radius*2);
+  graphics_fill_rect(ctx, box, radius, GCornersAll);
+  graphics_context_set_text_color(ctx, GColorWhite);
+  char *text = "00";
+  snprintf(text, 2, "%d", (int) num);
+  graphics_draw_text(ctx, text, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), box, 
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+}
+
 static void draw_arrows(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_antialiased(ctx, true);
@@ -219,6 +232,10 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   graphics_draw_lines(ctx, p1_m, GPoint(x1_con, y1_con), radius);
   //draw lines 2
   graphics_draw_lines(ctx, p2_m, GPoint(x2_con, y2_con), radius);
+  
+  //TODO consider drawing multiple bubbles
+  //draw time
+  //draw_number(ctx, GPoint(layer_get_frame(current.place_layer).origin.x, HEIGHT-radius*2), 12);
   
 }
 
