@@ -4,3 +4,5 @@
 //Bubles with time (hours) below map (one large for current)
 //Write time shift after place name
 //animate all
+//consider large map
+//consider half sun-set
