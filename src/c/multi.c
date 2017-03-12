@@ -20,18 +20,45 @@ static BitmapLayer *tmp_layer;
 
 
 struct place_descrition{
+  int32_t offset;
+  int32_t x, y;
+  char place_name[80];
+};
+
+struct place_visualization{
   Layer *place_layer;
   TextLayer *place_name_layer;
   TextLayer *place_time_layer;
-  int32_t offset, x, y;
-  char place_name[80];
   char watch_str[8];
-  //GColor color;
+  struct place_descrition place;
+  //GColor color;  
 };
 
+// Persistent storage key
+#define SETTINGS_KEY 1
+
+// Define our settings struct
+typedef struct ClaySettings {
+  GColor BackgroundColor;
+  GColor ForegroundColor;
+  struct place_descrition place1;
+  struct place_descrition place2;
+  struct place_descrition place_cur;
+} ClaySettings;
+
+// An instance of the struct
+static ClaySettings settings;
+
+// Save the settings to persistent storage
+static void prv_save_settings() {
+  persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
+}
 
 
-typedef struct place_descrition place_descr;
+
+
+
+typedef struct place_visualization place_descr;
 
 static place_descr place1, place2, current;
 
@@ -116,14 +143,14 @@ static void switch_panels_if_required(){
   GRect rect1 = layer_get_frame(place1.place_layer);
   GRect rect2 = layer_get_frame(place2.place_layer);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "rect1y: %d, rect2y: %d, y1: %d, y2 %d", 
-          (int)rect1.origin.y, (int)rect2.origin.y, (int)place1.y,(int)place2.y); 
+          (int)rect1.origin.y, (int)rect2.origin.y, (int)place1.place.y,(int)place2.place.y); 
   
-  if ((place1.y > place2.y) != (rect1.origin.y > rect2.origin.y)){
+  if ((place1.place.y > place2.place.y) != (rect1.origin.y > rect2.origin.y)){
     layer_set_frame(place1.place_layer, rect2);
     layer_set_frame(place2.place_layer, rect1);
     layer_mark_dirty(window_get_root_layer(s_window));
   }
-  if (place1.y > place2.y){
+  if (place1.place.y > place2.place.y){
     bottom_place_layer = place1.place_layer;
   }else{
     bottom_place_layer = place2.place_layer;
@@ -137,14 +164,14 @@ static void update_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tup
   if (!(city_t && offset_t && x_t && y_t))
     return;
   //TODO update only on suibstansial cahnges; make ifs
-  place->x = x_t->value->int32;
-  place->y = y_t->value->int32;
-  place->offset = offset_t->value->int32;
-  strncpy(place->place_name, city_t->value->cstring, sizeof(place->place_name));
+  place->place.x = x_t->value->int32;
+  place->place.y = y_t->value->int32;
+  place->place.offset = offset_t->value->int32;
+  strncpy(place->place.place_name, city_t->value->cstring, sizeof(place->place.place_name));
 
   snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)offset_t->value->int32);
   text_layer_set_text(place->place_time_layer, place->watch_str);
-  text_layer_set_text(place->place_name_layer, place->place_name);
+  text_layer_set_text(place->place_name_layer, place->place.place_name);
 }
 
 
@@ -215,12 +242,12 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   graphics_context_set_stroke_color(ctx, GColorOrange);
   
   //set up coords
-  GPoint p1_m = get_point_on_map(place1.x, place1.y, bounds.size);
-  GPoint p2_m = get_point_on_map(place2.x, place2.y, bounds.size);
+  GPoint p1_m = get_point_on_map(place1.place.x, place1.place.y, bounds.size);
+  GPoint p2_m = get_point_on_map(place2.place.x, place2.place.y, bounds.size);
 
   int16_t y1_con = 0;
   int16_t y2_con = bounds.size.h;
-  if (place1.y>place2.y){
+  if (place1.place.y>place2.place.y){
     y2_con = 0;
     y1_con = bounds.size.h;
   }
@@ -249,7 +276,7 @@ static void create_place_layer_default(place_descr *place, int16_t top, Layer *p
   //place->color = GColorOrange;
   
   strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place_name, "Test", 5);
+  strncpy(place->place.place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -260,7 +287,7 @@ static void create_place_layer_default(place_descr *place, int16_t top, Layer *p
   text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(place->place_name_layer, GTextAlignmentCenter);
 
-  text_layer_set_text(place->place_name_layer, place->place_name);
+  text_layer_set_text(place->place_name_layer, place->place.place_name);
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
@@ -338,17 +365,17 @@ static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offs
   if (!(x_t && y_t))
     return;
   //TODO update only on suibstansial cahnges; make ifs
-  place->x = x_t->value->int32;
-  place->y = y_t->value->int32;
+  place->place.x = x_t->value->int32;
+  place->place.y = y_t->value->int32;
   //convert coords
-  GPoint p_m = get_point_on_map(place->x, place->y, GSize(WIDTH, HEIGHT));
+  GPoint p_m = get_point_on_map(place->place.x, place->place.y, GSize(WIDTH, HEIGHT));
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Computed floating location %d, %d", (int) p_m.x, (int) p_m.y); 
   //place->offset = offset_t->value->int32;
   
   //compare to place 1 and place 2
-  if ((abs(place->x-place1.x)<radius/2 && abs(place->x-place1.x)<radius/2) ||
-    (abs(place->x-place2.x)<radius/2 && abs(place->x-place2.x)<radius/2)){
+  if ((abs(place->place.x-place1.place.x)<radius/2 && abs(place->place.x-place1.place.x)<radius/2) ||
+    (abs(place->place.x-place2.place.x)<radius/2 && abs(place->place.x-place2.place.x)<radius/2)){
     //too close
     layer_set_hidden(place->place_layer, true);
     return;
@@ -450,7 +477,7 @@ static void create_place_layer_floating(place_descr *place, Layer* parent){
   //place->color = GColorOrange;
   
   strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place_name, "Test", 5);
+  strncpy(place->place.place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -588,7 +615,7 @@ static void update_time(place_descr *place, time_t *time){
   struct tm *tick_time = gmtime(time);
   strftime(place->watch_str, sizeof(place->watch_str), clock_is_24h_style() ?
                                           "%H:%M" : "%I:%M", tick_time);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place_name, place->watch_str); 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place.place_name, place->watch_str); 
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
   
 
@@ -596,10 +623,10 @@ static void update_time(place_descr *place, time_t *time){
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t now = time(NULL);
-  time_t time1 = now + place1.offset;
+  time_t time1 = now + place1.place.offset;
   update_time(&place1, &time1);
   
-  time_t time2 = now + place2.offset;
+  time_t time2 = now + place2.place.offset;
   update_time(&place2, &time2);
  
   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
