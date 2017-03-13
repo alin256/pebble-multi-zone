@@ -8,7 +8,7 @@ const uint16_t radius = 8;
 
 static int redraw_counter = 500;
 
-static Window *s_window;	
+static Window *s_window;  
 static Layer *map_layer;
 static Layer *pointer_layer;
 static GBitmap *three_worlds;
@@ -30,7 +30,7 @@ struct place_visualization{
   TextLayer *place_name_layer;
   TextLayer *place_time_layer;
   char watch_str[8];
-  struct place_descrition place;
+  struct place_descrition *place;
   //GColor color;  
 };
 
@@ -69,11 +69,11 @@ static bool condensing = true;
 
 // Write message to buffer & send
 static void send_message(void){
-	DictionaryIterator *iter;
-	
-	app_message_outbox_begin(&iter);
-	
-	dict_write_end(iter);
+  DictionaryIterator *iter;
+  
+  app_message_outbox_begin(&iter);
+  
+  dict_write_end(iter);
   app_message_outbox_send();
 }
 
@@ -143,14 +143,14 @@ static void switch_panels_if_required(){
   GRect rect1 = layer_get_frame(place1.place_layer);
   GRect rect2 = layer_get_frame(place2.place_layer);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "rect1y: %d, rect2y: %d, y1: %d, y2 %d", 
-          (int)rect1.origin.y, (int)rect2.origin.y, (int)place1.place.y,(int)place2.place.y); 
+          (int)rect1.origin.y, (int)rect2.origin.y, (int)place1.place->y,(int)place2.place->y); 
   
-  if ((place1.place.y > place2.place.y) != (rect1.origin.y > rect2.origin.y)){
+  if ((place1.place->y > place2.place->y) != (rect1.origin.y > rect2.origin.y)){
     layer_set_frame(place1.place_layer, rect2);
     layer_set_frame(place2.place_layer, rect1);
     layer_mark_dirty(window_get_root_layer(s_window));
   }
-  if (place1.place.y > place2.place.y){
+  if (place1.place->y > place2.place->y){
     bottom_place_layer = place1.place_layer;
   }else{
     bottom_place_layer = place2.place_layer;
@@ -160,26 +160,29 @@ static void switch_panels_if_required(){
 
 //TODO make update place with simple ints and use it for perisistent stoarage.
 
-static void update_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
+static void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
   if (!(city_t && offset_t && x_t && y_t))
     return;
-  //TODO update only on suibstansial cahnges; make ifs
-  place->place.x = x_t->value->int32;
-  place->place.y = y_t->value->int32;
-  place->place.offset = offset_t->value->int32;
-  strncpy(place->place.place_name, city_t->value->cstring, sizeof(place->place.place_name));
+  //TODO update only on substansial cahnges; make ifs
+  place_d->x = x_t->value->int32;
+  place_d->y = y_t->value->int32;
+  place_d->offset = offset_t->value->int32;
+  strncpy(place_d->place_name, city_t->value->cstring, sizeof(place_d->place_name));
 
-  snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)offset_t->value->int32);
+
+}
+
+static void update_place_layer(place_descr *place){
+  snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)place->place->offset);
   text_layer_set_text(place->place_time_layer, place->watch_str);
-  text_layer_set_text(place->place_name_layer, place->place.place_name);
+  text_layer_set_text(place->place_name_layer, place->place->place_name);
 }
 
 
 
 
-
 // Called when an incoming message from PebbleKitJS is dropped
-static void in_dropped_handler(AppMessageResult reason, void *context) {	
+static void in_dropped_handler(AppMessageResult reason, void *context) {  
 }
 
 // Called when PebbleKitJS does not acknowledge receipt of a message
@@ -242,12 +245,12 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   graphics_context_set_stroke_color(ctx, GColorOrange);
   
   //set up coords
-  GPoint p1_m = get_point_on_map(place1.place.x, place1.place.y, bounds.size);
-  GPoint p2_m = get_point_on_map(place2.place.x, place2.place.y, bounds.size);
+  GPoint p1_m = get_point_on_map(place1.place->x, place1.place->y, bounds.size);
+  GPoint p2_m = get_point_on_map(place2.place->x, place2.place->y, bounds.size);
 
   int16_t y1_con = 0;
   int16_t y2_con = bounds.size.h;
-  if (place1.place.y>place2.place.y){
+  if (place1.place->y>place2.place->y){
     y2_con = 0;
     y1_con = bounds.size.h;
   }
@@ -266,9 +269,10 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   
 }
 
-static void create_place_layer_default(place_descr *place, int16_t top, Layer *parent){
+static void create_place_layer_default(place_descr *place, struct place_descrition *description, int16_t top, Layer *parent){
   GRect bounds = layer_get_bounds(parent);
   place->place_layer = layer_create(GRect(0, top, bounds.size.w, 48));
+  place->place = description;
   //place->place_layer = layer_create(GRect(0, top, 96, 48));
   layer_set_update_proc(place->place_layer, draw_place_bubble);
   layer_add_child(parent, place->place_layer);
@@ -276,7 +280,7 @@ static void create_place_layer_default(place_descr *place, int16_t top, Layer *p
   //place->color = GColorOrange;
   
   strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place.place_name, "Test", 5);
+  strncpy(place->place->place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -287,7 +291,7 @@ static void create_place_layer_default(place_descr *place, int16_t top, Layer *p
   text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(place->place_name_layer, GTextAlignmentCenter);
 
-  text_layer_set_text(place->place_name_layer, place->place.place_name);
+  text_layer_set_text(place->place_name_layer, place->place->place_name);
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
@@ -304,7 +308,7 @@ static void create_place_layer_default(place_descr *place, int16_t top, Layer *p
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
   layer_mark_dirty(text_layer_get_layer(place->place_name_layer));
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Watch string: %s", text_layer_get_text(place->place_time_layer)); 
-  //return place.place_layer;
+  //return place->place_layer;
 }
 
 const int16_t offset_mid = 2;
@@ -361,21 +365,16 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
 }
 
-static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
-  if (!(x_t && y_t))
-    return;
-  //TODO update only on suibstansial cahnges; make ifs
-  place->place.x = x_t->value->int32;
-  place->place.y = y_t->value->int32;
+static void update_floating_place(place_descr *place){                                  
   //convert coords
-  GPoint p_m = get_point_on_map(place->place.x, place->place.y, GSize(WIDTH, HEIGHT));
+  GPoint p_m = get_point_on_map(place->place->x, place->place->y, GSize(WIDTH, HEIGHT));
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Computed floating location %d, %d", (int) p_m.x, (int) p_m.y); 
   //place->offset = offset_t->value->int32;
   
   //compare to place 1 and place 2
-  if ((abs(place->place.x-place1.place.x)<radius/2 && abs(place->place.x-place1.place.x)<radius/2) ||
-    (abs(place->place.x-place2.place.x)<radius/2 && abs(place->place.x-place2.place.x)<radius/2)){
+  if ((abs(place->place->x-place1.place->x)<radius/2 && abs(place->place->x-place1.place->x)<radius/2) ||
+    (abs(place->place->x-place2.place->x)<radius/2 && abs(place->place->x-place2.place->x)<radius/2)){
     //too close
     layer_set_hidden(place->place_layer, true);
     return;
@@ -427,10 +426,10 @@ static void update_floating_place(place_descr *place, Tuple *city_t, Tuple *offs
 // Called when a message is received from PebbleKitJS
 static void in_received_handler(DictionaryIterator *received, void *context) {
   Tuple *reason_t = dict_find(received, MESSAGE_KEY_UpdateReason);
-	
+  
   if (reason_t){
     uint32_t reason_id = reason_t->value->uint32;
-		APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Status: %d", (int) reason_id); 
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Status: %d", (int) reason_id); 
     {
       Tuple *city_t;
       Tuple *offset_t;
@@ -442,14 +441,16 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       offset_t = dict_find(received, MESSAGE_KEY_ZoneOffset1);
       x_t = dict_find(received, MESSAGE_KEY_P1X);
       y_t = dict_find(received, MESSAGE_KEY_P1Y);
-      update_place(&place1, city_t, offset_t, x_t, y_t);
+      update_place(&settings.place1, city_t, offset_t, x_t, y_t);
+      update_place_layer(&place1);
 
       //updated place 2
       city_t = dict_find(received, MESSAGE_KEY_Place2);
       offset_t = dict_find(received, MESSAGE_KEY_ZoneOffset2);
       x_t = dict_find(received, MESSAGE_KEY_P2X);
       y_t = dict_find(received, MESSAGE_KEY_P2Y);
-      update_place(&place2, city_t, offset_t, x_t, y_t);
+      update_place(&settings.place2, city_t, offset_t, x_t, y_t);
+      update_place_layer(&place2);
 
       switch_panels_if_required();
       
@@ -458,7 +459,8 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       offset_t = dict_find(received, MESSAGE_KEY_ZoneOffsetCur);
       x_t = dict_find(received, MESSAGE_KEY_P_CUR_X);
       y_t = dict_find(received, MESSAGE_KEY_P_CUR_Y);
-      update_floating_place(&current, city_t, offset_t, x_t, y_t);
+      update_place(&settings.place_cur, city_t, offset_t, x_t, y_t);
+      update_floating_place(&current);
 
     }
   }
@@ -466,9 +468,10 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
   //send_message();
 }
 
-static void create_place_layer_floating(place_descr *place, Layer* parent){
+static void create_place_layer_floating(place_descr *place, struct place_descrition *place_d, Layer* parent){
   GRect bounds = layer_get_bounds(parent);
   place->place_layer = layer_create(GRect(0, 0, 52, radius*2));
+  place->place = place_d;
   //place->place_layer = layer_create(GRect(0, top, 96, 48));
   layer_set_update_proc(place->place_layer, draw_floating_layer_to_left);
   //layer_set_hidden(place->place_layer, true);
@@ -477,7 +480,7 @@ static void create_place_layer_floating(place_descr *place, Layer* parent){
   //place->color = GColorOrange;
   
   strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place.place_name, "Test", 5);
+  strncpy(place->place->place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -578,11 +581,11 @@ static void window_load(Window *window) {
   layer_set_update_proc(pointer_layer, draw_arrows);
   layer_add_child(map_layer, pointer_layer);  
   
-  create_place_layer_default(&place1, 0, window_layer);
-  create_place_layer_default(&place2, 120, window_layer);
+  create_place_layer_default(&place1, &settings.place1, 0, window_layer);
+  create_place_layer_default(&place2, &settings.place2, 120, window_layer);
   bottom_place_layer = place2.place_layer;
   
-  create_place_layer_floating(&current, map_layer);
+  create_place_layer_floating(&current, &settings.place_cur, map_layer);
   layer_set_hidden(current.place_layer, true);
   
   image = gbitmap_create_as_sub_bitmap(three_worlds, GRect(0, 0, WIDTH, HEIGHT));
@@ -615,7 +618,7 @@ static void update_time(place_descr *place, time_t *time){
   struct tm *tick_time = gmtime(time);
   strftime(place->watch_str, sizeof(place->watch_str), clock_is_24h_style() ?
                                           "%H:%M" : "%I:%M", tick_time);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place.place_name, place->watch_str); 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place->place_name, place->watch_str); 
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
   
 
@@ -623,10 +626,10 @@ static void update_time(place_descr *place, time_t *time){
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t now = time(NULL);
-  time_t time1 = now + place1.place.offset;
+  time_t time1 = now + place1.place->offset;
   update_time(&place1, &time1);
   
-  time_t time2 = now + place2.place.offset;
+  time_t time2 = now + place2.place->offset;
   update_time(&place2, &time2);
  
   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
@@ -640,35 +643,35 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
 }
 
 static void init(void) {
-	s_window = window_create();  
+  s_window = window_create();  
   window_set_background_color(s_window, GColorBlack);
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload
   });
   window_stack_push(s_window, true);
-	
-	
-	// Register AppMessage handlers
-	app_message_register_inbox_received(in_received_handler); 
-	app_message_register_inbox_dropped(in_dropped_handler); 
-	app_message_register_outbox_failed(out_failed_handler);
+  
+  
+  // Register AppMessage handlers
+  app_message_register_inbox_received(in_received_handler); 
+  app_message_register_inbox_dropped(in_dropped_handler); 
+  app_message_register_outbox_failed(out_failed_handler);
 
   // Initialize AppMessage inbox and outbox buffers with a suitable size
   const int inbox_size = 512;
   const int outbox_size = 512;
-	app_message_open(inbox_size, outbox_size);
+  app_message_open(inbox_size, outbox_size);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 }
 
 static void deinit(void) {
-	app_message_deregister_callbacks();
+  app_message_deregister_callbacks();
   tick_timer_service_unsubscribe();
-	window_destroy(s_window);
+  window_destroy(s_window);
 }
 
 int main( void ) {
-	init();
-	app_event_loop();
-	deinit();
+  init();
+  app_event_loop();
+  deinit();
 }
