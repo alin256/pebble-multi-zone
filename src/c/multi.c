@@ -34,6 +34,8 @@ struct place_visualization{
   //GColor color;  
 };
 
+static char question[1] = "?";
+
 // Persistent storage key
 #define SETTINGS_KEY 1
 
@@ -44,9 +46,11 @@ typedef struct ClaySettings {
   struct place_descrition place1;
   struct place_descrition place2;
   struct place_descrition place_cur;
+  time_t last_update;
 } ClaySettings;
 
-static bool position_known = false;
+//static bool position_known = false;
+const time_t OUTDATE_TIME = 1200;
 
 static char tmp_time_zone[TIMEZONE_NAME_LENGTH];
 
@@ -289,8 +293,8 @@ static void create_place_layer_default(place_descr *place, struct place_descriti
   
   //place->color = GColorOrange;
   
-  strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place->place_name, "Test", 5);
+  //   strncpy(place->watch_str, "00:00", 6);
+  //   strncpy(place->place->place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -367,7 +371,7 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
       graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h+i, 1), radius-1);    
   }
     
-  //draw counters
+  //draw contours
   graphics_context_set_antialiased(ctx, true);
   graphics_context_set_stroke_color(ctx, GColorOrange);
   graphics_draw_round_rect(ctx, bounds, radius);
@@ -375,11 +379,43 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
 }
 
-static void update_floating_place(place_descr *place){                                  
-  //convert coords
-  GPoint p_m = get_point_on_map(place->place->x, place->place->y, GSize(WIDTH, HEIGHT));
+static void draw_floating_layer_undefined(struct Layer *layer, GContext *ctx){
+  GRect bounds = layer_get_bounds(layer);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Computed floating location %d, %d", (int) p_m.x, (int) p_m.y); 
+  //fill insides
+  graphics_context_set_antialiased(ctx, false);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.w, 0), 
+                     radius, GCornersAll);
+  //draw contours
+  graphics_context_set_antialiased(ctx, true);
+  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_draw_round_rect(ctx, bounds, radius);
+  graphics_context_set_text_color(ctx, GColorOrange);
+  graphics_draw_text(ctx, &question[0], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), get_offset_rect(bounds.size.h, bounds.size.h, -1), GTextOverflowModeWordWrap, GTextAlignmentCenter, 0);
+  //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
+  //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
+}
+
+static void update_floating_place(place_descr *place){
+  GSize my_size = layer_get_bounds(place->place_layer).size;
+  GPoint p_m;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Elapsed since update %d, max %d", (int) (time(NULL) - settings.last_update), 
+          (int) OUTDATE_TIME); 
+  if (time(NULL) - settings.last_update > OUTDATE_TIME){
+    p_m.x = WIDTH/2 + my_size.h;
+    p_m.y = HEIGHT - my_size.h/2;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Forced floating location %d, %d", (int) p_m.x, (int) p_m.y); 
+  }
+  else
+  {
+    //convert coords
+    p_m = get_point_on_map(place->place->x, place->place->y, GSize(WIDTH, HEIGHT));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Computed floating location %d, %d", (int) p_m.x, (int) p_m.y); 
+  }
+
+  
   //place->offset = offset_t->value->int32;
   
   //compare to place 1 and place 2
@@ -393,7 +429,7 @@ static void update_floating_place(place_descr *place){
   layer_set_hidden(place->place_layer, false);
   text_layer_set_text(place->place_time_layer, place->watch_str);
   
-  GSize my_size = layer_get_bounds(place->place_layer).size;
+  
   int16_t new_top = p_m.y - my_size.h/2;
   if (new_top<1){
     new_top = 1;
@@ -429,6 +465,12 @@ static void update_floating_place(place_descr *place){
     layer_set_frame(text_layer_get_layer(place->place_time_layer), GRect(0, -1, my_size.w-radius*2, my_size.h));
     text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentRight);
   }
+  
+  
+  if (time(NULL) - settings.last_update > OUTDATE_TIME){
+    layer_set_update_proc(place->place_layer, draw_floating_layer_undefined);
+  }
+    
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Left: %d; Top: %d", (int) left_tmp, (int) new_top); 
     
 }
@@ -473,12 +515,14 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
         //update_place(&settings.place_cur, &settings.place_cur.place_name, offset_t, x_t, y_t);
         update_place_partial(&settings.place_cur, x_t, y_t);
         update_floating_place(&current);
-        position_known = true;
+        settings.last_update = time(NULL);
+        
       }
       else if  (reason_id == 43){
-        position_known = false;         
+        //position_known = false;         
       }
     }
+    prv_save_settings();
   }
   
   //send_message();
@@ -495,8 +539,8 @@ static void create_place_layer_floating(place_descr *place, struct place_descrit
   
   //place->color = GColorOrange;
   
-  strncpy(place->watch_str, "00:00", 6);
-  strncpy(place->place->place_name, "Test", 5);
+  //strncpy(place->watch_str, "00:00", 6);
+  //strncpy(place->place->place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
  
@@ -580,6 +624,11 @@ static void window_load(Window *window) {
   //GRect bounds = layer_get_bounds(window_layer);
   //TODO make ALL constants variable
 
+  if (persist_exists(SETTINGS_KEY)){
+    persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded settings successfully"); 
+  }
+  
   GRect map_bounds = GRect(0, 48, WIDTH, HEIGHT);
   map_layer = layer_create(map_bounds);
   layer_set_update_proc(map_layer, draw_map);
@@ -611,6 +660,11 @@ static void window_load(Window *window) {
     .change = prv_unobstructed_change
   };
   unobstructed_area_service_subscribe(handlers, NULL);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going to swap pannels");
+  switch_panels_if_required();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going to update the floating pannel");
+  update_floating_place(&current);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Loading complete");
 }
 
 static void window_unload(Window *window) {
@@ -671,6 +725,8 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
  
   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
                                           "%H:%M" : "%I:%M", tick_time);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in current location (%s) is updated to: %s", 
+          settings.place_cur.place_name, current.watch_str); 
   handle_zone_change();
   
   redraw_counter++;
@@ -704,6 +760,7 @@ static void init(void) {
 }
 
 static void deinit(void) {
+  prv_save_settings();
   app_message_deregister_callbacks();
   tick_timer_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
