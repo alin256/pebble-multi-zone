@@ -33,16 +33,6 @@ module.exports = [
         "placeholder": "eg: New York",
         "limit": 50,
         }
-      },
-      {
-      "type": "input",
-      "messageKey": "CurPlace",
-      "defaultValue": "Chernobyl",
-      "label": "Current Place",
-      "attributes": {
-        "placeholder": "eg: New York",
-        "limit": 50,
-        }
       }
     ]
   },

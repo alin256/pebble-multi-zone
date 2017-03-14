@@ -31,7 +31,8 @@
             "ZoneOffsetCur",
             "P_CUR_X",
             "P_CUR_Y",
-            "CurPlace"
+            "CurPlace",
+            "Request"
         ],
         "projectType": "native",
         "resources": {

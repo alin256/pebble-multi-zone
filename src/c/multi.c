@@ -46,6 +46,10 @@ typedef struct ClaySettings {
   struct place_descrition place_cur;
 } ClaySettings;
 
+static bool position_known = false;
+
+static char tmp_time_zone[TIMEZONE_NAME_LENGTH];
+
 // An instance of the struct
 static ClaySettings settings;
 
@@ -68,11 +72,11 @@ static bool condensing = true;
 
 
 // Write message to buffer & send
-static void send_message(void){
+static void send_position_request(void){
   DictionaryIterator *iter;
   
   app_message_outbox_begin(&iter);
-  
+  dict_write_int16(iter, MESSAGE_KEY_Request, 1);
   dict_write_end(iter);
   app_message_outbox_send();
 }
@@ -158,18 +162,24 @@ static void switch_panels_if_required(){
     
 }
 
-//TODO make update place with simple ints and use it for perisistent stoarage.
+static void update_place_partial(struct place_descrition *place_d, Tuple* x_t, Tuple* y_t){
+  if (!(x_t && y_t))
+    return;
+  //TODO update only on substansial cahnges; make ifs
+  place_d->x = x_t->value->int32;
+  place_d->y = y_t->value->int32;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Place %s changed to: x: %d, y: %d", place_d->place_name, place_d->x, place_d->y); 
+}
+
 
 static void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
   if (!(city_t && offset_t && x_t && y_t))
     return;
   //TODO update only on substansial cahnges; make ifs
-  place_d->x = x_t->value->int32;
-  place_d->y = y_t->value->int32;
+  update_place_partial(place_d, x_t, y_t);
   place_d->offset = offset_t->value->int32;
   strncpy(place_d->place_name, city_t->value->cstring, sizeof(place_d->place_name));
-
-
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Place %s changed to: x: %d, y: %d", place_d->place_name, place_d->x, place_d->y); 
 }
 
 static void update_place_layer(place_descr *place){
@@ -454,14 +464,20 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
 
       switch_panels_if_required();
       
-      //updated place Curent
-      city_t = dict_find(received, MESSAGE_KEY_CurPlace);
-      offset_t = dict_find(received, MESSAGE_KEY_ZoneOffsetCur);
-      x_t = dict_find(received, MESSAGE_KEY_P_CUR_X);
-      y_t = dict_find(received, MESSAGE_KEY_P_CUR_Y);
-      update_place(&settings.place_cur, city_t, offset_t, x_t, y_t);
-      update_floating_place(&current);
-
+      if (reason_id == 42){//GPS
+        //updated place Curent
+        //city_t = dict_find(received, MESSAGE_KEY_CurPlace);
+        //offset_t = dict_find(received, MESSAGE_KEY_ZoneOffsetCur);
+        x_t = dict_find(received, MESSAGE_KEY_P_CUR_X);
+        y_t = dict_find(received, MESSAGE_KEY_P_CUR_Y);
+        //update_place(&settings.place_cur, &settings.place_cur.place_name, offset_t, x_t, y_t);
+        update_place_partial(&settings.place_cur, x_t, y_t);
+        update_floating_place(&current);
+        position_known = true;
+      }
+      else if  (reason_id == 43){
+        position_known = false;         
+      }
     }
   }
   
@@ -561,7 +577,7 @@ static void prv_unobstructed_change(AnimationProgress progress, void *context) {
 
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_bounds(window_layer);
+  //GRect bounds = layer_get_bounds(window_layer);
   //TODO make ALL constants variable
 
   GRect map_bounds = GRect(0, 48, WIDTH, HEIGHT);
@@ -624,6 +640,27 @@ static void update_time(place_descr *place, time_t *time){
 
 }
 
+static void request_locaion(){
+  send_position_request();
+}
+
+static void handle_zone_change(){
+  if (clock_is_timezone_set()){
+    clock_get_timezone(tmp_time_zone, TIMEZONE_NAME_LENGTH);
+    if (strcmp(tmp_time_zone, settings.place_cur.place_name) != 0){
+      request_locaion();
+      strcpy(settings.place_cur.place_name, tmp_time_zone);
+    }
+  }
+}
+
+static void handle_connection_change(bool connected){
+  if (connected){
+    //TODO improve logic
+    request_locaion();
+  }
+}
+
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t now = time(NULL);
   time_t time1 = now + place1.place->offset;
@@ -634,6 +671,7 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
  
   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
                                           "%H:%M" : "%I:%M", tick_time);
+  handle_zone_change();
   
   redraw_counter++;
   if (redraw_counter >= REDRAW_INTERVAL) {
@@ -662,11 +700,13 @@ static void init(void) {
   const int outbox_size = 512;
   app_message_open(inbox_size, outbox_size);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+  bluetooth_connection_service_subscribe(handle_connection_change);
 }
 
 static void deinit(void) {
   app_message_deregister_callbacks();
   tick_timer_service_unsubscribe();
+  bluetooth_connection_service_unsubscribe();
   window_destroy(s_window);
 }
 

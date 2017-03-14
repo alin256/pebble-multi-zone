@@ -30,8 +30,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
   console.log("From UI: " + JSON.stringify(dict));
   fetchLocation(dict[messageKeys.Place1], messageKeys.Place1, messageKeys.P1X, messageKeys.P1Y, messageKeys.ZoneOffset1, 1);
   fetchLocation(dict[messageKeys.Place2], messageKeys.Place2, messageKeys.P2X, messageKeys.P2Y, messageKeys.ZoneOffset2, 2);
-  fetchLocation(dict[messageKeys.CurPlace], messageKeys.CurPlace, messageKeys.P_CUR_X, messageKeys.P_CUR_Y, 
-                 messageKeys.ZoneOffsetCur, 3);
+//   fetchLocation(dict[messageKeys.CurPlace], messageKeys.CurPlace, messageKeys.P_CUR_X, messageKeys.P_CUR_Y, 
+//                  messageKeys.ZoneOffsetCur, 3);
 });
 
 function doneTimeZone(timeZoneDataString, keyZone, reason, tryNum)
@@ -124,27 +124,41 @@ function httpGetAsync(theUrl, callback)
 }
 
 
-// function locationSuccess(pos) {
-//   var coordinates = pos.coords;
-//   return;
-//   //dict[messageKeys.]
-//   Pebble.sendAppMessage(dict, function(e) {
-//       console.log('Sent update for current location');
-//     }, function(e) {
-//       console.log('Failed to send config data!');
-//       console.log(JSON.stringify(e));
-//     });
-// }
+function locationSuccess(pos) {
+  var coordinates = pos.coords;
+  console.log(coordinates);
+  //messageKeys.CurPlace, 
+  var keyX = messageKeys.P_CUR_X;
+  var keyY = messageKeys.P_CUR_Y;
+  dict[keyX] = Math.floor((coordinates.longitude+180)*maxAngle/360);
+  //readonly attribute double latitude;
+  //readonly attribute double longitude;
+  dict[keyY] = Math.floor((-coordinates.latitude+90)*maxAngle/360);
+  dict[messageKeys.UpdateReason] = 42; //GPS
+  Pebble.sendAppMessage(dict, function(e) {
+      console.log('Sent update for current location');
+    }, function(e) {
+      console.log('Failed to send config data!');
+      console.log(JSON.stringify(e));
+    });
+}
 
-// function locationError(err) {
-//   console.warn('location error (' + err.code + '): ' + err.message);
-// }
+function locationError(err) {
+  console.warn('location error (' + err.code + '): ' + err.message);
+  dict[messageKeys.UpdateReason] = 43; //no GPS
+  Pebble.sendAppMessage(dict, function(e) {
+      console.log('Sent update for current location');
+    }, function(e) {
+      console.log('Failed to send config data!');
+      console.log(JSON.stringify(e));
+    });  
+}
 
-// var locationOptions = {
-//   //'enableHighAccuracy': false,
-//   'timeout': 0, //do not update if not available
-//   'maximumAge': 36000000
-// };
+var locationOptions = {
+  'enableHighAccuracy': false,
+  'timeout': 5000, //do not update if not available
+  'maximumAge': 1200000
+};
 
 // Pebble.addEventListener('ready', function (e) {
 //   console.log('connect!' + e.ready);
@@ -153,13 +167,15 @@ function httpGetAsync(theUrl, callback)
 //   console.log(e.type);
 // });
 
-// Pebble.addEventListener('appmessage', function (e) {
-//   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
-//     locationOptions);
-//   console.log(e.type);
-//   console.log(e.payload.temperature);
-//   console.log('message!');
-// });
+Pebble.addEventListener('appmessage', function (e) {
+  console.log('message: ');
+  console.log(e.payload.Request);
+  if (e.payload.Request == 1){
+   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
+     locationOptions);
+   console.log('Position requested!');
+  }
+});
 
 // // Fetch stock data for a given stock symbol (NYSE or NASDAQ only) from markitondemand.com
 // // & send the stock price back to the watch via app message
