@@ -80,6 +80,7 @@ static ClaySettings settings;
 // Save the settings to persistent storage
 static void prv_save_settings() {
   persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
+  persist_write_int(SETTINGS_VERSION_KEY, current_settings_version);
 }
 
 
