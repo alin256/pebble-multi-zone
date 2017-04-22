@@ -51,6 +51,12 @@ module.exports = [
       },
       {
         "type": "color",
+        "messageKey": "TextColor",
+        "defaultValue": "0xFFFFFF",
+        "label": "Text Color"
+      },
+      {
+        "type": "color",
         "messageKey": "ForegroundColor",
         "defaultValue": "0xFFFFFF",
         "label": "Foreground Color"
@@ -66,16 +72,17 @@ module.exports = [
       },
       {
         "type": "toggle",
-        "messageKey": "SecondTick",
-        "label": "Enable Seconds",
-        "defaultValue": false
-      },
-      {
-        "type": "toggle",
-        "messageKey": "Animations",
-        "label": "Enable Animations",
+        "messageKey": "ShowLocalTime",
+        "label": "Show local time buble",
         "defaultValue": false
       }
+//       ,
+//       {
+//         "type": "toggle",
+//         "messageKey": "Animations",
+//         "label": "Enable Animations",
+//         "defaultValue": false
+//       }
     ]
   },
   {

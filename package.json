@@ -32,7 +32,8 @@
             "P_CUR_X",
             "P_CUR_Y",
             "CurPlace",
-            "Request"
+            "Request",
+            "ShowLocalTime"
         ],
         "projectType": "native",
         "resources": {

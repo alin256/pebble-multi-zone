@@ -46,6 +46,7 @@ typedef struct ClaySettings {
   struct place_descrition place1;
   struct place_descrition place2;
   struct place_descrition place_cur;
+  int8_t show_local_time;
   time_t last_update;
 } ClaySettings;
 
@@ -77,12 +78,14 @@ static bool condensing = true;
 
 // Write message to buffer & send
 static void send_position_request(void){
-  DictionaryIterator *iter;
+  if (settings.show_local_time){
+    DictionaryIterator *iter;
   
-  app_message_outbox_begin(&iter);
-  dict_write_int16(iter, MESSAGE_KEY_Request, 1);
-  dict_write_end(iter);
-  app_message_outbox_send();
+    app_message_outbox_begin(&iter);
+    dict_write_int16(iter, MESSAGE_KEY_Request, 1);
+    dict_write_end(iter);
+    app_message_outbox_send();
+  }
 }
 
 //piece of code from:
@@ -379,6 +382,12 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
 }
 
+
+static void request_locaion(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Location requested !"); 
+  send_position_request();
+}
+
 static void draw_floating_layer_undefined(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
 
@@ -407,6 +416,7 @@ static void update_floating_place(place_descr *place){
     p_m.x = WIDTH/2 + my_size.h;
     p_m.y = HEIGHT - my_size.h/2;
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Forced floating location %d, %d", (int) p_m.x, (int) p_m.y); 
+    request_locaion();
   }
   else
   {
@@ -479,9 +489,14 @@ static void update_floating_place(place_descr *place){
 static void in_received_handler(DictionaryIterator *received, void *context) {
   Tuple *reason_t = dict_find(received, MESSAGE_KEY_UpdateReason);
   
+  Tuple *show_local_t = dict_find(received, MESSAGE_KEY_ShowLocalTime);
+  if (show_local_t){
+    settings.show_local_time = show_local_t->value->int16;
+  }
+  
   if (reason_t){
     uint32_t reason_id = reason_t->value->uint32;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Status: %d", (int) reason_id); 
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Status: %d", (int) reason_id);
     {
       Tuple *city_t;
       Tuple *offset_t;
@@ -694,11 +709,11 @@ static void update_time(place_descr *place, time_t *time){
 
 }
 
-static void request_locaion(){
-  send_position_request();
-}
+
 
 static void handle_zone_change(){
+  
+  layer_set_hidden(current.place_layer, !settings.show_local_time);
   if (clock_is_timezone_set()){
     clock_get_timezone(tmp_time_zone, TIMEZONE_NAME_LENGTH);
     if (strcmp(tmp_time_zone, settings.place_cur.place_name) != 0){
