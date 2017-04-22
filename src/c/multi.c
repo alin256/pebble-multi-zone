@@ -523,6 +523,15 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     else{
       settings.TextColor = GColorWhite;
     }
+    text_layer_set_text_color(place1.place_time_layer, settings.TextColor);
+    text_layer_set_text_color(place1.place_name_layer, settings.TextColor);
+
+    text_layer_set_text_color(place2.place_time_layer, settings.TextColor);
+    text_layer_set_text_color(place2.place_name_layer, settings.TextColor);
+
+    text_layer_set_text_color(current.place_time_layer, settings.TextColor);
+    text_layer_set_text_color(current.place_name_layer, settings.TextColor);
+
   }
   
   if (reason_t){
@@ -673,6 +682,7 @@ static void window_load(Window *window) {
   if (persist_exists(SETTINGS_KEY)){
     persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded settings successfully"); 
+    //window_set_background_color(s_window, settings.BackgroundColor);
   }
   
   GRect map_bounds = GRect(0, 48, WIDTH, HEIGHT);
@@ -784,7 +794,7 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
 
 static void init(void) {
   s_window = window_create();  
-  window_set_background_color(s_window, settings.BackgroundColor);
+  window_set_background_color(s_window, GColorBlack);
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload
