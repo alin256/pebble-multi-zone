@@ -1,3 +1,18 @@
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// Copyleft: Sergey Alyaev, 2017
+
 #include <pebble.h>
 
 
@@ -38,6 +53,9 @@ static char question[1] = "?";
 
 // Persistent storage key
 #define SETTINGS_KEY 1
+#define SETTINGS_VERSION_KEY 2
+
+static const int32_t current_settings_version = 5;
 
 // Define our settings struct
 typedef struct ClaySettings {
@@ -680,9 +698,14 @@ static void window_load(Window *window) {
   //TODO make ALL constants variable
 
   if (persist_exists(SETTINGS_KEY)){
-    persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded settings successfully"); 
-    //window_set_background_color(s_window, settings.BackgroundColor);
+    if (persist_exists(SETTINGS_VERSION_KEY)){
+      int32_t set_ver = persist_read_int(SETTINGS_VERSION_KEY);
+      if (set_ver == current_settings_version){
+        persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded settings successfully"); 
+        //window_set_background_color(s_window, settings.BackgroundColor);
+      }
+    }
   }
   
   GRect map_bounds = GRect(0, 48, WIDTH, HEIGHT);
