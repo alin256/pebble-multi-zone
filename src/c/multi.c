@@ -43,6 +43,7 @@ static char question[1] = "?";
 typedef struct ClaySettings {
   GColor BackgroundColor;
   GColor ForegroundColor;
+  GColor TextColor;
   struct place_descrition place1;
   struct place_descrition place2;
   struct place_descrition place_cur;
@@ -190,8 +191,8 @@ static void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple 
 }
 
 static void update_place_layer(place_descr *place){
-  snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)place->place->offset);
-  text_layer_set_text(place->place_time_layer, place->watch_str);
+  //snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)place->place->offset);
+  //text_layer_set_text(place->place_time_layer, place->watch_str);
   text_layer_set_text(place->place_name_layer, place->place->place_name);
 }
 
@@ -212,13 +213,13 @@ static void draw_place_bubble(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
   //background
   graphics_context_set_antialiased(ctx, false);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, settings.BackgroundColor);
+  graphics_context_set_fill_color(ctx, settings.BackgroundColor);
   graphics_fill_rect(ctx, bounds, radius, GCornersAll);
   
   //frame
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
   graphics_draw_round_rect(ctx, bounds, radius);
 }
 
@@ -249,7 +250,7 @@ static void draw_number(GContext *ctx, GPoint middle, int16_t num){
   GRect box =  GRect(middle.x - radius*3/2, middle.y -radius, 
                                 radius*3, radius*2);
   graphics_fill_rect(ctx, box, radius, GCornersAll);
-  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_context_set_text_color(ctx, settings.TextColor);
   char *text = "00";
   snprintf(text, 2, "%d", (int) num);
   graphics_draw_text(ctx, text, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), box, 
@@ -259,7 +260,7 @@ static void draw_number(GContext *ctx, GPoint middle, int16_t num){
 static void draw_arrows(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
   
   //set up coords
   GPoint p1_m = get_point_on_map(place1.place->x, place1.place->y, bounds.size);
@@ -294,7 +295,7 @@ static void create_place_layer_default(place_descr *place, struct place_descriti
   layer_set_update_proc(place->place_layer, draw_place_bubble);
   layer_add_child(parent, place->place_layer);
   
-  //place->color = GColorOrange;
+  //place->color = settings.ForegroundColor;
   
   //   strncpy(place->watch_str, "00:00", 6);
   //   strncpy(place->place->place_name, "Test", 5);
@@ -302,7 +303,7 @@ static void create_place_layer_default(place_descr *place, struct place_descriti
   bounds = layer_get_bounds(place->place_layer);
  
   place->place_name_layer = text_layer_create(GRect(0, 0, bounds.size.w, 16));
-  text_layer_set_text_color(place->place_name_layer, GColorWhite);
+  text_layer_set_text_color(place->place_name_layer, settings.TextColor);
   text_layer_set_background_color(place->place_name_layer, GColorClear);
   //text_layer_set_background_color(place->place_name_layer, GColorBlue);
   text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -312,7 +313,7 @@ static void create_place_layer_default(place_descr *place, struct place_descriti
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
-  text_layer_set_text_color(place->place_time_layer, GColorWhite);
+  text_layer_set_text_color(place->place_time_layer, settings.TextColor);
   text_layer_set_background_color(place->place_time_layer, GColorClear);
   //text_layer_set_background_color(place->place_time_layer, GColorGreen);
   text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
@@ -345,8 +346,8 @@ static void draw_floating_layer_to_left(struct Layer *layer, GContext *ctx){
 
   //fill insides
   graphics_context_set_antialiased(ctx, false);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, settings.BackgroundColor);
+  graphics_context_set_fill_color(ctx, settings.BackgroundColor);
   graphics_fill_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.w-radius*2, 0), 
                      radius, GCornersLeft);
   for (int16_t i = 0; i<=(bounds.size.h-1)/2; ++i){
@@ -355,7 +356,7 @@ static void draw_floating_layer_to_left(struct Layer *layer, GContext *ctx){
     
   //draw counters
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
   graphics_draw_round_rect(ctx, bounds, radius);
   graphics_draw_round_rect(ctx, get_offset_rect_right(bounds.size.h, bounds.size.h, 2, bounds.size.w), radius-2);
   graphics_draw_round_rect(ctx, get_offset_rect_right(bounds.size.h, bounds.size.h, radius-1, bounds.size.w), 1);
@@ -366,8 +367,8 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
 
   //fill insides
   graphics_context_set_antialiased(ctx, false);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, settings.BackgroundColor);
+  graphics_context_set_fill_color(ctx, settings.BackgroundColor);
   graphics_fill_rect(ctx, get_offset_rect_right(bounds.size.h, bounds.size.w-radius*2, 0, bounds.size.w), 
                      radius, GCornersRight);
   for (int16_t i = 0; i<=(bounds.size.h-1)/2; ++i){
@@ -376,7 +377,7 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
     
   //draw contours
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
   graphics_draw_round_rect(ctx, bounds, radius);
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
@@ -393,15 +394,15 @@ static void draw_floating_layer_undefined(struct Layer *layer, GContext *ctx){
 
   //fill insides
   graphics_context_set_antialiased(ctx, false);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, settings.BackgroundColor);
+  graphics_context_set_fill_color(ctx, settings.BackgroundColor);
   graphics_fill_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.w, 0), 
                      radius, GCornersAll);
   //draw contours
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, GColorOrange);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
   graphics_draw_round_rect(ctx, bounds, radius);
-  graphics_context_set_text_color(ctx, GColorOrange);
+  graphics_context_set_text_color(ctx, settings.ForegroundColor);
   graphics_draw_text(ctx, &question[0], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), get_offset_rect(bounds.size.h, bounds.size.h, -1), GTextOverflowModeWordWrap, GTextAlignmentCenter, 0);
   //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
   //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
@@ -494,6 +495,36 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     settings.show_local_time = show_local_t->value->int16;
   }
   
+  {
+    Tuple *back_color_t = dict_find(received, MESSAGE_KEY_BackgroundColor);
+    if (back_color_t){
+      settings.BackgroundColor = GColorFromHEX(back_color_t->value->int32);
+    }
+    else{
+      settings.BackgroundColor = GColorBlack;
+    }
+  }
+  
+  {
+    Tuple *front_color_t = dict_find(received, MESSAGE_KEY_ForegroundColor);
+    if (front_color_t){
+      settings.ForegroundColor = GColorFromHEX(front_color_t->value->int32);
+    }
+    else{
+      settings.ForegroundColor = GColorOrange;
+    }
+  }
+
+  {
+    Tuple *text_color_t = dict_find(received, MESSAGE_KEY_TextColor);
+    if (text_color_t){
+      settings.TextColor = GColorFromHEX(text_color_t->value->int32);
+    }
+    else{
+      settings.TextColor = GColorWhite;
+    }
+  }
+  
   if (reason_t){
     uint32_t reason_id = reason_t->value->uint32;
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Status: %d", (int) reason_id);
@@ -552,7 +583,7 @@ static void create_place_layer_floating(place_descr *place, struct place_descrit
   //layer_set_hidden(place->place_layer, true);
   layer_add_child(parent, place->place_layer);
   
-  //place->color = GColorOrange;
+  //place->color = settings.ForegroundColor;
   
   //strncpy(place->watch_str, "00:00", 6);
   //strncpy(place->place->place_name, "Test", 5);
@@ -561,7 +592,7 @@ static void create_place_layer_floating(place_descr *place, struct place_descrit
  
   //The layer below is not in use
   place->place_name_layer = text_layer_create(GRect(radius*2+1, -2+1, bounds.size.w-radius*2, bounds.size.h));
-  //text_layer_set_text_color(place->place_name_layer, GColorWhite);
+  //text_layer_set_text_color(place->place_name_layer, settings.TextColor);
   //text_layer_set_background_color(place->place_name_layer, GColorClear);
   //text_layer_set_background_color(place->place_name_layer, GColorBlue);
   //text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -570,7 +601,7 @@ static void create_place_layer_floating(place_descr *place, struct place_descrit
   //layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
   place->place_time_layer = text_layer_create(GRect(radius*2, -1, bounds.size.w-radius*2, bounds.size.h));
-  text_layer_set_text_color(place->place_time_layer, GColorWhite);
+  text_layer_set_text_color(place->place_time_layer, settings.TextColor);
   text_layer_set_background_color(place->place_time_layer, GColorClear);
   //text_layer_set_background_color(place->place_time_layer, GColorGreen);
   text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -753,7 +784,7 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
 
 static void init(void) {
   s_window = window_create();  
-  window_set_background_color(s_window, GColorBlack);
+  window_set_background_color(s_window, settings.BackgroundColor);
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload

@@ -58,7 +58,7 @@ module.exports = [
       {
         "type": "color",
         "messageKey": "ForegroundColor",
-        "defaultValue": "0xFFFFFF",
+        "defaultValue": "0xFF5500",
         "label": "Foreground Color"
       }
     ]
