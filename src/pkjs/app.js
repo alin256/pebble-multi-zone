@@ -83,7 +83,17 @@ function doneLocation(locationDataString, keyPlace, keyX, keyY, keyZone, reason)
     var locationData = JSON.parse(locationDataString);
     if (locationData.status == "OK"){
       var niceAddress = locationData.results[0].formatted_address;
-      dict[keyPlace] = niceAddress.substr(0, niceAddress.indexOf(','));
+      var tmp_str = niceAddress;
+      var c_address = niceAddress.substr(0, niceAddress.indexOf(','));
+      if (!isNaN(c_address)){
+        console.log("Number, not address: " + c_address); 
+        tmp_str = tmp_str.substr(tmp_str.indexOf(',')+1) + ",";
+        c_address = tmp_str.substr(0, tmp_str.indexOf(','));
+      }
+      c_address = c_address.replace("Islands", "Isl.");
+      c_address = c_address.replace("Island", "Isl.");
+
+      dict[keyPlace] = c_address;
       dict[keyX] = Math.floor((locationData.results[0].geometry.location.lng+180)*maxAngle/360);
       dict[keyY] = Math.floor((-locationData.results[0].geometry.location.lat+90)*maxAngle/360);
       console.log("Location found: " + niceAddress  + 
