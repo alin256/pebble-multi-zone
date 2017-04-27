@@ -49,6 +49,7 @@ struct place_visualization{
   TextLayer *place_name_layer;
   TextLayer *place_time_layer;
   char watch_str[8];
+  char place_str[100];
   struct place_descrition *place;
   //GColor color;  
 };
@@ -152,10 +153,49 @@ static void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Place %s changed to: x: %d, y: %d", place_d->place_name, place_d->x, place_d->y); 
 }
 
+static void render_place_name(place_descr *place, bool show_offset){
+  strcpy(place->place_str, place->place->place_name);
+  if (show_offset){
+    if (strlen(place->place_str) > 0){
+      strcat(place->place_str, ", ");    
+    }
+    char offset_str[20];
+    int offset_hours = place->place->offset / 3600;
+    int offset_min = place->place->offset % 3600 / 60;
+    //some weird time zone
+    if (offset_min != 0){
+      int abs_offset = place->place->offset;
+      if (abs_offset < 0){
+         abs_offset = -abs_offset;
+      }
+      time_t offset_t = (time_t) abs_offset;
+      tm* time_offset = gmtime(&offset_t);
+      strftime(offset_str, 20,  (place->place->offset >= 0) ?
+                                          "+%H:%M" : "-%H:%M", time_offset);
+      strcat(place->place_str, offset_str);
+      return;
+    }
+      
+      
+    if (offset_hours >= 0){
+      snprintf(offset_str, 20, "+%d", offset_hours);      
+    }else{
+      snprintf(offset_str, 20, "%d", offset_hours);      
+    }
+    strcat(place->place_str, offset_str);
+    if (offset_hours == 1 || offset_hours == -1){
+      strcat(place->place_str, "HR");
+    }else{
+      strcat(place->place_str, "HRS");
+    }
+  }
+}
+
 static void update_place_layer(place_descr *place){
   //snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)place->place->offset);
   //text_layer_set_text(place->place_time_layer, place->watch_str);
-  text_layer_set_text(place->place_name_layer, place->place->place_name);
+  //text_layer_set_text(place->place_name_layer, place->place->place_name);
+  render_place_name(place, true);
 }
 
 
@@ -249,6 +289,8 @@ static void draw_arrows(struct Layer *layer, GContext *ctx){
   
 }
 
+
+
 static void create_place_layer_default(place_descr *place, struct place_descrition *description, int16_t top, Layer *parent){
   GRect bounds = layer_get_bounds(parent);
   place->place_layer = layer_create(GRect(0, top, bounds.size.w, 48));
@@ -270,10 +312,13 @@ static void create_place_layer_default(place_descr *place, struct place_descriti
   //text_layer_set_background_color(place->place_name_layer, GColorBlue);
   text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(place->place_name_layer, GTextAlignmentCenter);
-
-  text_layer_set_text(place->place_name_layer, place->place->place_name);
+  
+  text_layer_set_text(place->place_name_layer, place->place_str);
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
+  //updating the layer name
+  render_place_name(place, true);
+  
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
   text_layer_set_text_color(place->place_time_layer, settings.TextColor);
   text_layer_set_background_color(place->place_time_layer, GColorClear);
