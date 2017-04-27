@@ -160,17 +160,22 @@ static void render_place_name(place_descr *place, bool show_offset){
       strcat(place->place_str, ", ");    
     }
     char offset_str[20];
-    int offset_hours = place->place->offset / 3600;
-    int offset_min = place->place->offset % 3600 / 60;
+    time_t now_t = time(NULL);    
+    struct tm* l_time_tm = localtime(&now_t);
+    int local_offset = l_time_tm->tm_gmtoff;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "local offset: %d", local_offset); 
+    int rel_offset = place->place->offset - local_offset;
+    int offset_hours = rel_offset / 3600;
+    int offset_min = rel_offset % 3600 / 60;
     //some weird time zone
     if (offset_min != 0){
-      int abs_offset = place->place->offset;
+      int abs_offset = rel_offset;
       if (abs_offset < 0){
          abs_offset = -abs_offset;
       }
       time_t offset_t = (time_t) abs_offset;
       tm* time_offset = gmtime(&offset_t);
-      strftime(offset_str, 20,  (place->place->offset >= 0) ?
+      strftime(offset_str, 20,  (rel_offset >= 0) ?
                                           "+%H:%M" : "-%H:%M", time_offset);
       strcat(place->place_str, offset_str);
       return;
@@ -567,6 +572,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       update_place_layer(&place2);
 
       switch_panels_if_required();
+      layer_mark_dirty(window_get_root_layer(s_window));
       
       if (reason_id == 42){//GPS
         //updated place Curent
