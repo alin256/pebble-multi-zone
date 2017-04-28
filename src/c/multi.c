@@ -32,6 +32,8 @@ static GBitmap *three_worlds;
 static GBitmap *image;
 static BitmapLayer *tmp_layer;
 
+
+
 //arrows thing
 static Layer *pointer_layer;
 
@@ -88,8 +90,62 @@ static void prv_save_settings() {
   persist_write_int(SETTINGS_VERSION_KEY, current_settings_version);
 }
 
+struct date_layer{
+//layer with date
+  Layer *date_root_layer;
+//add today
+//add weekday
+  TextLayer *date_left;
+  TextLayer *date_right;
+};
+  
+static struct date_layer date_l;
 
+const int date_width = WIDTH / 4;
+const int date_height = HEIGHT / 3;
 
+static void layer_set_center(Layer* layer, int x, int y){
+  GSize size = layer_get_frame(layer).size;
+  int w = size.w;
+  int h = size.h;
+  GRect new_frame = GRect(x - w/2, y-h/2, w, h);  
+  layer_set_frame(layer, new_frame);
+}
+
+static TextLayer* date_layer_create_default(GRect rect, Layer *root){
+  TextLayer *cur = text_layer_create(rect);
+  text_layer_set_text_color(cur, GColorWhite);
+  text_layer_set_font(cur, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text_alignment(cur, GTextAlignmentCenter);
+  text_layer_set_background_color(cur, GColorClear);
+  text_layer_set_text(cur, "26");
+  layer_add_child(root, text_layer_get_layer(cur));
+  layer_set_frame(text_layer_get_layer(cur), rect);
+  return cur;
+}
+
+static Layer* create_date_layer(struct date_layer *date_l){
+  date_l->date_root_layer = layer_create(GRect(0, 0, date_width*2+1, date_height));
+  
+  //left
+  date_l->date_left = date_layer_create_default(GRect(0, 0, date_width, date_height), date_l->date_root_layer);
+  text_layer_set_text_alignment(date_l->date_left, GTextAlignmentRight);
+  
+  //right
+  date_l->date_right =date_layer_create_default(GRect(date_width+1, 0, date_width, date_height), date_l->date_root_layer);
+  text_layer_set_text_alignment(date_l->date_right, GTextAlignmentLeft);
+  
+  //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));
+  //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));  
+  return date_l->date_root_layer;
+}
+
+static void destroy_date_layer(struct date_layer *date_l){
+  text_layer_destroy(date_l->date_left);
+  text_layer_destroy(date_l->date_right);
+  
+  layer_destroy(date_l->date_root_layer);
+}
 
 
 typedef struct place_visualization place_descr;
@@ -112,6 +168,9 @@ static void send_position_request(void){
     app_message_outbox_send();
   }
 }
+
+
+
 
 
 static void switch_panels_if_required(){
@@ -719,6 +778,14 @@ static void window_load(Window *window) {
   bitmap_layer_set_bitmap(tmp_layer, three_worlds);
   //layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
   
+  //date
+  Layer *date_root = create_date_layer(&date_l);
+  layer_add_child(bitmap_layer_get_layer(map_layer), date_root);
+  int32_t x, y;
+  get_dark_point_map((int) time(NULL), &x, &y);
+  layer_set_center(date_root, x, y);
+  
+  
   pointer_layer = layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
   layer_set_update_proc(pointer_layer, draw_arrows);
   layer_add_child(bitmap_layer_get_layer( map_layer), pointer_layer);  
@@ -747,8 +814,10 @@ static void window_unload(Window *window) {
   destroy_place_layer(&place1);
   destroy_place_layer(&place2);
   destroy_place_layer(&current);
-  bitmap_layer_destroy(tmp_layer);
   
+  destroy_date_layer(&date_l);
+  
+  bitmap_layer_destroy(tmp_layer);
   
   layer_destroy(pointer_layer);
   bitmap_layer_destroy(map_layer);

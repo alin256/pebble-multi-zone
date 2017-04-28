@@ -1,6 +1,12 @@
 #include <pebble.h>
 #include "map_layer.h"
 
+struct my_point{
+  int32_t x; //0 .. trig max angle
+  int32_t y; //-trig max angle/2 .. trig max angle/2
+};
+
+
 struct my_point get_sun_point(int time){
   float day_of_year; // value from 0 to 1 of progress through a year
   float time_of_day; // value from 0 to 1 of progress through a day
@@ -30,6 +36,17 @@ struct my_point get_dark_point(int time){
   dark_point.y = - dark_point.y;
   return dark_point;
 }
+
+// void convert_to_map(struct my_point p, int32_t* x, int32_t* y){
+
+// }
+
+void get_dark_point_map(int time, int32_t* x, int32_t* y){
+  struct my_point p = get_dark_point(time);
+  *x = p.x*WIDTH/TRIG_MAX_ANGLE;
+  *y = (TRIG_MAX_ANGLE/2-p.y)*HEIGHT/TRIG_MAX_ANGLE;
+}
+
 
 //piece of code modified from:
 //davidfg4/pebble-day-night
