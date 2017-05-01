@@ -222,8 +222,11 @@ static void render_place_name(place_descr *place, bool show_offset){
     time_t now_t = time(NULL);    
     struct tm* l_time_tm = localtime(&now_t);
     int local_offset = l_time_tm->tm_gmtoff;
+    int summer_time_offset = l_time_tm->tm_isdst*3600;
     APP_LOG(APP_LOG_LEVEL_DEBUG, "local offset: %d", local_offset); 
-    int rel_offset = place->place->offset - local_offset;
+    int rel_offset = place->place->offset - local_offset - summer_time_offset;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative offset for %s: %d - (%d) - %d = %d", place->place->place_name, 
+            place->place->offset, local_offset, summer_time_offset, rel_offset);
     int offset_hours = rel_offset / 3600;
     int offset_min = rel_offset % 3600 / 60;
     //some weird time zone
