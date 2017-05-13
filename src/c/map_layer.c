@@ -44,7 +44,8 @@ struct my_point get_dark_point(int time){
 void get_dark_point_map(int time, int32_t* x, int32_t* y){
   struct my_point p = get_dark_point(time);
   *x = p.x*WIDTH/TRIG_MAX_ANGLE;
-  *y = (TRIG_MAX_ANGLE/2-p.y)*HEIGHT/TRIG_MAX_ANGLE;
+  *y = (TRIG_MAX_ANGLE/2+p.y)*HEIGHT/TRIG_MAX_ANGLE;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "coordinates on map: %d %d", *x, *y);
 }
 
 

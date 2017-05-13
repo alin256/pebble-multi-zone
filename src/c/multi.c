@@ -15,6 +15,8 @@
 
 #include <pebble.h>
 #include "map_layer.h"
+#include "today_layer.h"
+#include "utils.h"
 
 
 #define REDRAW_INTERVAL 15
@@ -37,7 +39,7 @@ static BitmapLayer *tmp_layer;
 //arrows thing
 static Layer *pointer_layer;
 
-
+const char weekdays[16] = "MoTuWeThFrSaSu";
 
 
 struct place_descrition{
@@ -90,62 +92,10 @@ static void prv_save_settings() {
   persist_write_int(SETTINGS_VERSION_KEY, current_settings_version);
 }
 
-struct date_layer{
-//layer with date
-  Layer *date_root_layer;
-//add today
-//add weekday
-  TextLayer *date_left;
-  TextLayer *date_right;
-};
+
   
 static struct date_layer date_l;
 
-const int date_width = WIDTH / 4;
-const int date_height = HEIGHT / 3;
-
-static void layer_set_center(Layer* layer, int x, int y){
-  GSize size = layer_get_frame(layer).size;
-  int w = size.w;
-  int h = size.h;
-  GRect new_frame = GRect(x - w/2, y-h/2, w, h);  
-  layer_set_frame(layer, new_frame);
-}
-
-static TextLayer* date_layer_create_default(GRect rect, Layer *root){
-  TextLayer *cur = text_layer_create(rect);
-  text_layer_set_text_color(cur, GColorWhite);
-  text_layer_set_font(cur, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  text_layer_set_text_alignment(cur, GTextAlignmentCenter);
-  text_layer_set_background_color(cur, GColorClear);
-  text_layer_set_text(cur, "26");
-  layer_add_child(root, text_layer_get_layer(cur));
-  layer_set_frame(text_layer_get_layer(cur), rect);
-  return cur;
-}
-
-static Layer* create_date_layer(struct date_layer *date_l){
-  date_l->date_root_layer = layer_create(GRect(0, 0, date_width*2+1, date_height));
-  
-  //left
-  date_l->date_left = date_layer_create_default(GRect(0, 0, date_width, date_height), date_l->date_root_layer);
-  text_layer_set_text_alignment(date_l->date_left, GTextAlignmentRight);
-  
-  //right
-  date_l->date_right =date_layer_create_default(GRect(date_width+1, 0, date_width, date_height), date_l->date_root_layer);
-  text_layer_set_text_alignment(date_l->date_right, GTextAlignmentLeft);
-  
-  //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));
-  //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));  
-  return date_l->date_root_layer;
-}
-
-static void destroy_date_layer(struct date_layer *date_l){
-  text_layer_destroy(date_l->date_left);
-  text_layer_destroy(date_l->date_right);
-  
-  layer_destroy(date_l->date_root_layer);
-}
 
 
 typedef struct place_visualization place_descr;

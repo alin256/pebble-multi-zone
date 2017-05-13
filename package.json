@@ -40,6 +40,23 @@
         "resources": {
             "media": [
                 {
+                    "file": "images/today7",
+                    "name": "IMAGE_TODAY_7",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/today",
+                    "name": "IMAGE_TODAY",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "bitmap"
+                },
+                {
                     "file": "images/Arrow",
                     "menuIcon": true,
                     "name": "Arrow",
