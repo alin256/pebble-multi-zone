@@ -1,6 +1,19 @@
 #include <pebble.h>
 #include "place_layer_current.h"
 
+const int16_t offset_mid = 2;
+
+static GRect get_offset_rect(int16_t height, int16_t width, int16_t offset){
+  GRect bounds = GRect(offset, offset, width - offset*2, height - offset*2);
+  return bounds;  
+}
+
+static GRect get_offset_rect_right(int16_t height, int16_t width, int16_t offset, int16_t total_width){
+  GRect bounds = GRect(offset+total_width-width, offset, width - offset*2, height - offset*2);
+  return bounds;  
+}
+
+
 static void draw_floating_layer_to_left(struct Layer *layer, GContext *ctx){
   GRect bounds = layer_get_bounds(layer);
 
@@ -42,6 +55,26 @@ static void draw_floating_layer_to_right(struct Layer *layer, GContext *ctx){
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
   graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
 }
+
+static void draw_floating_layer_undefined(struct Layer *layer, GContext *ctx){
+  GRect bounds = layer_get_bounds(layer);
+
+  //fill insides
+  graphics_context_set_antialiased(ctx, false);
+  graphics_context_set_stroke_color(ctx, settings.BackgroundColor);
+  graphics_context_set_fill_color(ctx, settings.BackgroundColor);
+  graphics_fill_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.w, 0), 
+                     radius, GCornersAll);
+  //draw contours
+  graphics_context_set_antialiased(ctx, true);
+  graphics_context_set_stroke_color(ctx, settings.ForegroundColor);
+  graphics_draw_round_rect(ctx, bounds, radius);
+  graphics_context_set_text_color(ctx, settings.ForegroundColor);
+  graphics_draw_text(ctx, &question[0], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), get_offset_rect(bounds.size.h, bounds.size.h, -1), GTextOverflowModeWordWrap, GTextAlignmentCenter, 0);
+  //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, 2), radius-2);
+  //graphics_draw_round_rect(ctx, get_offset_rect(bounds.size.h, bounds.size.h, radius-1), 1);
+}
+
 
 static void update_floating_place(place_descr *place){
   GSize my_size = layer_get_bounds(place->place_layer).size;

@@ -1,12 +1,41 @@
 #include <pebble.h>
 #include "map_layer.h"
 
+
+//const uint16_t 
+#define WIDTH 144
+//const uint16_t 
+#define HEIGHT 72
+
 static int redraw_counter = 500;
 
 struct my_point{
   int32_t x; //0 .. trig max angle
   int32_t y; //-trig max angle/2 .. trig max angle/2
 };
+
+BitmapLayer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){
+  // Load the image
+  map_layer->three_worlds = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_3_WORLDS);
+  map_layer->image = gbitmap_create_as_sub_bitmap(map_layer->three_worlds, GRect(0, 0, WIDTH, HEIGHT));
+  
+  GRect map_bounds = GRect(origin.x, origin.y, WIDTH, HEIGHT);
+  map_layer->map_layer = bitmap_layer_create(map_bounds);
+  bitmap_layer_set_bitmap(map_layer->map_layer, map_layer->image);
+  //(map_layer, draw_map);
+
+  return map_layer->map_layer;
+  //draw_earth();
+  
+  //tmp_layer = bitmap_layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
+  //bitmap_layer_set_bitmap(tmp_layer, three_worlds);
+  //layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
+}
+
+void map_layer_destroy(struct MapLayer* map_layer){
+  bitmap_layer_destroy(map_layer->map_layer);
+  gbitmap_destroy(map_layer->three_worlds);
+}
 
 GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds){
   int16_t x_m = x*bounds.w/TRIG_MAX_ANGLE;

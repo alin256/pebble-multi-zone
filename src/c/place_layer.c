@@ -1,52 +1,8 @@
 #include <pebble.h>
 #include "place_layer.h"
-#include "src/c/my_types.h"
+#include "src/c/place_description.h"
 #include "src/c/settings.h"
 
-static void create_place_layer_default(place_descr *place, struct place_descrition *description, int16_t top, Layer *parent){
-  GRect bounds = layer_get_bounds(parent);
-  place->place_layer = layer_create(GRect(0, top, bounds.size.w, 48));
-  place->place = description;
-  //place->place_layer = layer_create(GRect(0, top, 96, 48));
-  layer_set_update_proc(place->place_layer, draw_place_bubble);
-  layer_add_child(parent, place->place_layer);
-  
-  //place->color = settings.ForegroundColor;
-  
-  //   strncpy(place->watch_str, "00:00", 6);
-  //   strncpy(place->place->place_name, "Test", 5);
-  
-  bounds = layer_get_bounds(place->place_layer);
- 
-  place->place_name_layer = text_layer_create(GRect(0, 0, bounds.size.w, 16));
-  text_layer_set_text_color(place->place_name_layer, settings.TextColor);
-  text_layer_set_background_color(place->place_name_layer, GColorClear);
-  //text_layer_set_background_color(place->place_name_layer, GColorBlue);
-  text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
-  text_layer_set_text_alignment(place->place_name_layer, GTextAlignmentCenter);
-  
-  text_layer_set_text(place->place_name_layer, place->place_str);
-  layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
-
-  //updating the layer name
-  render_place_name(place, true);
-  
-  place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
-  text_layer_set_text_color(place->place_time_layer, settings.TextColor);
-  text_layer_set_background_color(place->place_time_layer, GColorClear);
-  //text_layer_set_background_color(place->place_time_layer, GColorGreen);
-  text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
-  text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentCenter);
-  text_layer_set_text(place->place_time_layer, place->watch_str);
-  layer_add_child(place->place_layer, text_layer_get_layer(place->place_time_layer));
-  
-  layer_mark_dirty(parent);
-  layer_mark_dirty(place->place_layer);
-  layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
-  layer_mark_dirty(text_layer_get_layer(place->place_name_layer));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Watch string: %s", text_layer_get_text(place->place_time_layer)); 
-  //return place->place_layer;
-}
 
 
 void destroy_place_layer(place_layer *place){
@@ -55,15 +11,7 @@ void destroy_place_layer(place_layer *place){
   layer_destroy(place->place_layer);
 }
 
-void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t){
-  if (!(city_t && offset_t && x_t && y_t))
-    return;
-  //TODO update only on substansial cahnges; make ifs
-  update_place_partial(place_d, x_t, y_t);
-  place_d->offset = offset_t->value->int32;
-  strncpy(place_d->place_name, city_t->value->cstring, sizeof(place_d->place_name));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Place %s changed to: x: %d, y: %d", place_d->place_name, place_d->x, place_d->y); 
-}
+
 
 
 void draw_place_bubble(struct Layer *layer, GContext *ctx){
@@ -133,6 +81,51 @@ void update_place_layer(place_layer *place){
   //text_layer_set_text(place->place_time_layer, place->watch_str);
   //text_layer_set_text(place->place_name_layer, place->place->place_name);
   render_place_name(place, true);
+}
+
+void create_place_layer_default(place_layer *place, struct place_descrition *description, int16_t top, Layer *parent){
+  GRect bounds = layer_get_bounds(parent);
+  place->place_layer = layer_create(GRect(0, top, bounds.size.w, 48));
+  place->place = description;
+  //place->place_layer = layer_create(GRect(0, top, 96, 48));
+  layer_set_update_proc(place->place_layer, draw_place_bubble);
+  layer_add_child(parent, place->place_layer);
+  
+  //place->color = settings.ForegroundColor;
+  
+  //   strncpy(place->watch_str, "00:00", 6);
+  //   strncpy(place->place->place_name, "Test", 5);
+  
+  bounds = layer_get_bounds(place->place_layer);
+ 
+  place->place_name_layer = text_layer_create(GRect(0, 0, bounds.size.w, 16));
+  text_layer_set_text_color(place->place_name_layer, settings.TextColor);
+  text_layer_set_background_color(place->place_name_layer, GColorClear);
+  //text_layer_set_background_color(place->place_name_layer, GColorBlue);
+  text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(place->place_name_layer, GTextAlignmentCenter);
+  
+  text_layer_set_text(place->place_name_layer, place->place_str);
+  layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
+
+  //updating the layer name
+  render_place_name(place, true);
+  
+  place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
+  text_layer_set_text_color(place->place_time_layer, settings.TextColor);
+  text_layer_set_background_color(place->place_time_layer, GColorClear);
+  //text_layer_set_background_color(place->place_time_layer, GColorGreen);
+  text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentCenter);
+  text_layer_set_text(place->place_time_layer, place->watch_str);
+  layer_add_child(place->place_layer, text_layer_get_layer(place->place_time_layer));
+  
+  layer_mark_dirty(parent);
+  layer_mark_dirty(place->place_layer);
+  layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
+  layer_mark_dirty(text_layer_get_layer(place->place_name_layer));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Watch string: %s", text_layer_get_text(place->place_time_layer)); 
+  //return place->place_layer;
 }
 
 
