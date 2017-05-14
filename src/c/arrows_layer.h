@@ -1,7 +1,9 @@
-#pragma once
+#ifndef ARROWS_LAYER_H
+#define ARROWS_LAYER_H
+
 #include <pebble.h>
-#include "src/c/place_layer.h"
-#include "src/c/settings.h"
+#include "place_layer.h"
+#include "settings.h"
 
 typedef GPoint GetPointOnMap(int32_t x, int32_t y, GSize bounds);
 
@@ -22,3 +24,4 @@ struct Layer* arrows_layer_create(GRect frame,
 
 
 
+#endif

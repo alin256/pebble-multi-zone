@@ -16,10 +16,10 @@
 #include <pebble.h>
 #include "map_layer.h"
 #include "utils.h"
-#include "src/c/place_description.h"
-#include "src/c/settings.h"
-#include "src/c/place_layer.h"
-#include "src/c/arrows_layer.h"
+#include "place_description.h"
+#include "settings.h"
+#include "place_layer.h"
+#include "arrows_layer.h"
 
 //#include "today_layer.h"
 

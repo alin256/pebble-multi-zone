@@ -1,8 +1,9 @@
+#ifdef TODAY_LAYER_ENABLED
 #include <pebble.h>
 #include "today_layer.h"
 #include "map_layer.h"
 #include "utils.h"
-#include "src/c/map_layer.h"
+#include "map_layer.h"
 
 //TODO remove defines from here
 //const uint16_t 
@@ -85,3 +86,4 @@ void destroy_date_layer(struct date_layer *date_l){
   
   layer_destroy(date_l->date_root_layer);
 }
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef EVENT_ANIMATION_H
+#define EVENT_ANIMATION_H
+
 #ifdef EVENT_ANIMATION_ENABLED
 
 //information about animation
@@ -51,4 +53,5 @@ static void prv_unobstructed_change(AnimationProgress progress, void *context) {
   //   layer_set_frame(bitmap_layer_get_layer(map_layer), map_bounds);
     
 }
+#endif
 #endif

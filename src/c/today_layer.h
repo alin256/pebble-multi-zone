@@ -1,4 +1,8 @@
-#pragma once
+#ifndef TODAY_LAYER_H
+#define TODAY_LAYER_H
+
+
+#ifdef TODAY_LAYER_ENABLED
 #include <pebble.h>
 
 struct date_layer{
@@ -16,3 +20,5 @@ struct date_layer{
 Layer* create_date_layer(struct date_layer *date_l);
 
 void destroy_date_layer(struct date_layer *date_l);
+#endif
+#endif

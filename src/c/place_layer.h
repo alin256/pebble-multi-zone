@@ -1,6 +1,8 @@
-#pragma once
+#ifndef PLACE_LAYER_H
+#define PLACE_LAYER_H
+
 #include <pebble.h>
-#include "src/c/settings.h"
+#include "settings.h"
 
 
 #ifdef PBL_PLATFORM_BASALT
@@ -32,3 +34,5 @@ void create_place_layer_default(place_layer *place,
 void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t);
 void destroy_place_layer(place_layer *place);
 void update_place_layer(place_layer *place);
+
+#endif

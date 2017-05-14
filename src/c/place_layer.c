@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include "place_layer.h"
-#include "src/c/place_description.h"
-#include "src/c/settings.h"
+#include "place_description.h"
+#include "settings.h"
 
 
 

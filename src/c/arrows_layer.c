@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include "arrows_layer.h"
-#include "src/c/map_layer.h"
-#include "src/c/settings.h"
+#include "map_layer.h"
+#include "settings.h"
 
 int16_t get_x_within_bounds(int16_t old_x, GRect bounds, int16_t radius){
   int16_t x = old_x;

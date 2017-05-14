@@ -1,4 +1,6 @@
-#pragma once
+#ifndef MAP_LAYER_H
+#define MAP_LAYER_H
+
 #include <pebble.h>
 
 
@@ -25,10 +27,8 @@ void map_layer_destroy(struct MapLayer* map_layer);
 
 void map_layer_redraw_minute(struct MapLayer *map_layer_struct);
 
-GRect map_leyer_get_frame(struct MapLayer* map_layer){
-  return layer_get_frame(bitmap_layer_get_layer(map_layer->map_layer));
-}
+GRect map_leyer_get_frame(struct MapLayer* map_layer);
 
-void map_leyer_set_frame(struct MapLayer* map_layer, GRect frame){
-  return layer_set_frame(bitmap_layer_get_layer(map_layer->map_layer), frame);
-}
+void map_leyer_set_frame(struct MapLayer* map_layer, GRect frame);
+
+#endif
