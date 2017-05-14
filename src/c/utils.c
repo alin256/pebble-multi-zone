@@ -20,3 +20,14 @@ void layer_set_center(Layer* layer, int x, int y){
 //   graphics_draw_text(ctx, text, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), box, 
 //                      GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 // }
+
+// static void handle_zone_change(){
+//   //layer_set_hidden(current.place_layer, !settings.show_local_time);
+//   if (clock_is_timezone_set()){
+//     clock_get_timezone(tmp_time_zone, TIMEZONE_NAME_LENGTH);
+//     if (strcmp(tmp_time_zone, settings.place_cur.place_name) != 0){
+//       //request_locaion();
+//       strcpy(settings.place_cur.place_name, tmp_time_zone);
+//     }
+//   }
+// }

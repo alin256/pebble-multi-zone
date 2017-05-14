@@ -1,5 +1,5 @@
 #include <pebble.h>
-#include "my_types.h"
+#include "src/c/place_description.h"
 
 
 void update_place_partial(struct place_descrition *place_d, Tuple* x_t, Tuple* y_t){

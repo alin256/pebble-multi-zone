@@ -20,6 +20,11 @@ typedef struct ClaySettings {
   time_t last_update;
 } Settings;
 
+typedef struct SettingsHandler{
+  Settings *settings;
+  void (*callback)();
+}SettingsHandler;
+
 // Save the settings to persistent storage
 void prv_save_settings(Settings* settings) {
   persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
@@ -40,20 +45,21 @@ void prv_load_settings(Settings* settings){
 }
 
 // Called when an incoming message from PebbleKitJS is dropped
-static void in_dropped_handler(AppMessageResult reason, void *context) {  
+void in_dropped_handler(AppMessageResult reason, void *context) {  
 }
 
 // Called when PebbleKitJS does not acknowledge receipt of a message
-static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
 }
 
 
 
 // Called when a message is received from PebbleKitJS
-static void in_received_handler(DictionaryIterator *received, void *context) {
+void in_received_handler(DictionaryIterator *received, void *context) {
   //would be reserved if we update based on GPS in the future
   //Tuple *reason_t = dict_find(received, MESSAGE_KEY_UpdateReason);
-  Settings *settings = (Settings*) context;
+  SettingsHandler *handler = (SettingsHandler*) context;
+  Settings *settings = handler->settings;
     
   Tuple *show_local_t = dict_find(received, MESSAGE_KEY_ShowLocalTime);
   if (show_local_t){
@@ -118,6 +124,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       //       }
     }
     prv_save_settings(settings);
+    handler->callback();
   }
   
   //send_message();

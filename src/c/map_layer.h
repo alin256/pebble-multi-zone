@@ -1,11 +1,14 @@
 #pragma once
 #include <pebble.h>
 
+
+
 struct MapLayer{
   //map things
   BitmapLayer *map_layer;
   GBitmap *three_worlds;
   GBitmap *image;
+  int32_t redraw_counter;
   //BitmapLayer *tmp_layer;
 };
 
@@ -19,6 +22,8 @@ void draw_earth(GBitmap* three_worlds, struct Layer* map_layer);
 BitmapLayer* map_leyer_create(GPoint origin, struct MapLayer* map_layer);
 
 void map_layer_destroy(struct MapLayer* map_layer);
+
+void map_layer_redraw_minute(struct MapLayer *map_layer_struct);
 
 GRect map_leyer_get_frame(struct MapLayer* map_layer){
   return layer_get_frame(bitmap_layer_get_layer(map_layer->map_layer));

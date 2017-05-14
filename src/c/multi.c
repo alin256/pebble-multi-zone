@@ -15,26 +15,13 @@
 
 #include <pebble.h>
 #include "map_layer.h"
-#include "today_layer.h"
 #include "utils.h"
 #include "src/c/place_description.h"
 #include "src/c/settings.h"
 #include "src/c/place_layer.h"
 #include "src/c/arrows_layer.h"
 
-
-#ifdef PBL_PLATFORM_BASALT
-//Rounded edges for Basalt
-#define SCREEN_RADIUS 8;
-#else
-#define SCREEN_RADIUS 0;
-#endif
-
-#define REDRAW_INTERVAL 15
-
-//string constants
-const char weekdays[16] = "MoTuWeThFrSaSu";
-const char question[1] = "?";
+//#include "today_layer.h"
 
 //window
 static Window *s_window;  
@@ -48,7 +35,7 @@ const time_t OUTDATE_TIME = 1200;
 // An instance of the struct
 static Settings settings;
   
-static struct date_layer date_l;
+//static struct date_layer date_l;
 
 static place_layer place1, place2;
 static Layer *arrow_layer1, *arrow_layer2;
@@ -56,78 +43,18 @@ static Layer *arrow_layer1, *arrow_layer2;
 //this is a reference to botom place
 static Layer *bottom_place_layer;
 
-//information about animation
-static bool condensing = true;
 
-
-
-// static void request_locaion(){
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Location requested !"); 
-//   send_position_request();
-// }
-
-static void handle_update_text_color(){
+static void handle_update_settings(){
     text_layer_set_text_color(place1.place_time_layer, settings.TextColor);
     text_layer_set_text_color(place1.place_name_layer, settings.TextColor);
     text_layer_set_text_color(place2.place_time_layer, settings.TextColor);
     text_layer_set_text_color(place2.place_name_layer, settings.TextColor);
     //     text_layer_set_text_color(current.place_time_layer, settings.TextColor);
     //     text_layer_set_text_color(current.place_name_layer, settings.TextColor);
-
     update_place_layer(&place1);
     update_place_layer(&place2);
-
     //     switch_panels_if_required();
     layer_mark_dirty(window_get_root_layer(s_window));
-
-}
-
-static void prv_unobstructed_will_change(GRect final_unobstructed_screen_area,
-void *context) {
-  // Get the total available screen real-estate
-  GRect bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_window));
-  if (bounds.size.h > final_unobstructed_screen_area.size.h){
-    condensing = true;
-  }else{
-    condensing = false;
-  }
-  
-  //GRect full_bounds = layer_get_bounds(window_get_root_layer(s_window));
-  //   if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
-  //     // Screen is about to become obstructed, hide the date
-  //     layer_set_hidden(text_layer_get_layer(s_date_layer), true);
-  //   }
-}
-
-static void prv_unobstructed_change(AnimationProgress progress, void *context) {
-  // Get the total available screen real-estate
-  GRect bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_window));
-  //Get frame of bubbles
-  GRect bottom_bounds = layer_get_frame(bottom_place_layer);
-  
-  //move bottom layer
-  bottom_bounds.origin.y = bounds.size.h - bottom_bounds.size.h;
-  layer_set_frame(bottom_place_layer, bottom_bounds);
-  
-  //move map layer
-  GRect map_frame = map_leyer_get_frame(&map_layer_struct);
-  int32_t directed_progress;
-  if (condensing){
-    directed_progress = progress-ANIMATION_NORMALIZED_MIN;
-  }else{
-    directed_progress = ANIMATION_NORMALIZED_MAX - progress;
-  }
-
-  //   GRect floating_bounds = layer_get_frame(current.place_layer);
-  //   map_bounds.origin.y = bottom_bounds.size.h + 
-  //     (- floating_bounds.origin.y + 2)
-  //     *(directed_progress)/(ANIMATION_NORMALIZED_MAX-ANIMATION_NORMALIZED_MIN);
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Animation progress: %d, directed: %d", (int) progress, (int)directed_progress);
-  
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "New y: %d", (int) map_bounds.origin.y);
-  
-  //   layer_set_frame(bitmap_layer_get_layer(map_layer), map_bounds);
-    
 }
 
 static void window_load(Window *window) {
@@ -137,10 +64,13 @@ static void window_load(Window *window) {
   
   //load settings
   prv_load_settings(&settings);
+  handle_update_settings();
 
   //place layers
-  create_place_layer_default(&place1, &settings.place1, 0, window_layer);
-  create_place_layer_default(&place2, &settings.place2, 120, window_layer);
+  create_place_layer_default(&place1, &settings.place1, 0,
+                             &settings, window_layer);
+  create_place_layer_default(&place2, &settings.place2, 120,                                 
+                             &settings, window_layer);
   bottom_place_layer = place2.place_layer;
   
   //map layer
@@ -164,23 +94,25 @@ static void window_load(Window *window) {
   layer_add_child(map_layer_base, arrow_layer2);
   
   
-  //date
-  Layer *date_root = create_date_layer(&date_l);
-  layer_add_child(bitmap_layer_get_layer(map_layer), date_root);
-  int32_t x, y;
-  get_dark_point_map((int) time(NULL), &x, &y);
-  layer_set_center(date_root, x, y);
-  
+  //   //date
+  //   Layer *date_root = create_date_layer(&date_l);
+  //   layer_add_child(bitmap_layer_get_layer(map_layer), date_root);
+    
+  //   int32_t x, y;
+  //   get_dark_point_map((int) time(NULL), &x, &y);
+  //   layer_set_center(date_root, x, y);
+    
   //floating layer 
   //create_place_layer_floating(&current, &settings.place_cur, bitmap_layer_get_layer( map_layer));
   //layer_set_hidden(current.place_layer, true);
   
-
-  UnobstructedAreaHandlers handlers = {
-    .will_change = prv_unobstructed_will_change,
-    .change = prv_unobstructed_change
-  };
-  unobstructed_area_service_subscribe(handlers, NULL);
+  //   //event animation API 4.0
+  //   UnobstructedAreaHandlers handlers = {
+  //     .will_change = prv_unobstructed_will_change,
+  //     .change = prv_unobstructed_change
+  //   };
+  //   unobstructed_area_service_subscribe(handlers, NULL);
+  
   //panel switching - to be removed
   //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Going to swap pannels");
   //   switch_panels_if_required();
@@ -193,7 +125,7 @@ static void window_unload(Window *window) {
   destroy_place_layer(&place1);
   destroy_place_layer(&place2);
   
-  destroy_date_layer(&date_l);
+  //destroy_date_layer(&date_l);
   
   layer_destroy(arrow_layer1);
   layer_destroy(arrow_layer2);
@@ -212,19 +144,6 @@ static void update_time(place_layer *place, time_t *time){
 }
 
 
-
-static void handle_zone_change(){
-  
-  //layer_set_hidden(current.place_layer, !settings.show_local_time);
-  if (clock_is_timezone_set()){
-    clock_get_timezone(tmp_time_zone, TIMEZONE_NAME_LENGTH);
-    if (strcmp(tmp_time_zone, settings.place_cur.place_name) != 0){
-      //request_locaion();
-      strcpy(settings.place_cur.place_name, tmp_time_zone);
-    }
-  }
-}
-
 static void handle_connection_change(bool connected){
   if (connected){
     //TODO improve logic
@@ -240,17 +159,15 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t time2 = now + place2.place->offset;
   update_time(&place2, &time2);
  
-  strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
-                                          "%H:%M" : "%I:%M", tick_time);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in current location (%s) is updated to: %s", 
-          settings.place_cur.place_name, current.watch_str); 
-  handle_zone_change();
+  //Handling current time
+  //TODO upgrade
+  //   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
+  //                                           "%H:%M" : "%I:%M", tick_time);
+  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in current location (%s) is updated to: %s", 
+  //           settings.place_cur.place_name, current.watch_str); 
+  //handle_zone_change();
+  map_layer_redraw_minute(&map_layer_struct);
   
-  redraw_counter++;
-  if (redraw_counter >= REDRAW_INTERVAL) {
-    draw_earth(three_worlds, bitmap_layer_get_layer(map_layer));
-    redraw_counter = 0;
-  }
 }
 
 static void init(void) {

@@ -6,13 +6,25 @@
 #define WIDTH 144
 //const uint16_t 
 #define HEIGHT 72
+//
+#define REDRAW_INTERVAL_MINUTES 15
 
-static int redraw_counter = 500;
+
 
 struct my_point{
   int32_t x; //0 .. trig max angle
   int32_t y; //-trig max angle/2 .. trig max angle/2
 };
+
+
+void map_layer_redraw_minute(struct MapLayer *map_layer_struct){
+  map_layer_struct->redraw_counter++;
+  if (map_layer_struct->redraw_counter >= REDRAW_INTERVAL_MINUTES) {
+    draw_earth(map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
+    map_layer_struct->redraw_counter = 0;
+  }
+
+}
 
 BitmapLayer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){
   // Load the image

@@ -11,10 +11,14 @@ void destroy_place_layer(place_layer *place){
   layer_destroy(place->place_layer);
 }
 
-
+struct PlaceLayerData{
+  place_layer* place_l;
+};
 
 
 void draw_place_bubble(struct Layer *layer, GContext *ctx){
+  struct PlaceLayerData* data = (struct PlaceLayerData*) layer_get_data(layer);
+  place_layer *place = data->place_l;
   GRect bounds = layer_get_bounds(layer);
   //background
   graphics_context_set_antialiased(ctx, false);
@@ -22,12 +26,12 @@ void draw_place_bubble(struct Layer *layer, GContext *ctx){
   Settings *settings = layer_get_data(layer);
   graphics_context_set_stroke_color(ctx, settings->BackgroundColor);
   graphics_context_set_fill_color(ctx, settings->BackgroundColor);
-  graphics_fill_rect(ctx, bounds, radius, GCornersAll);
+  graphics_fill_rect(ctx, bounds, place->radius, GCornersAll);
   
   //frame
   graphics_context_set_antialiased(ctx, true);
   graphics_context_set_stroke_color(ctx, settings->ForegroundColor);
-  graphics_draw_round_rect(ctx, bounds, radius);
+  graphics_draw_round_rect(ctx, bounds, place->radius);
 }
 
 void render_place_name(place_layer *place, bool show_offset){
@@ -83,10 +87,18 @@ void update_place_layer(place_layer *place){
   render_place_name(place, true);
 }
 
-void create_place_layer_default(place_layer *place, struct place_descrition *description, int16_t top, Layer *parent){
+void create_place_layer_default(place_layer *place, 
+                                struct place_descrition *description, 
+                                int16_t top, 
+                                Settings *settings,
+                                Layer *parent){
   GRect bounds = layer_get_bounds(parent);
-  place->place_layer = layer_create(GRect(0, top, bounds.size.w, 48));
+  place->place_layer = layer_create_with_data(GRect(0, top, bounds.size.w, 48), sizeof(struct PlaceLayerData));
+  struct PlaceLayerData* data = (struct PlaceLayerData*) layer_get_data(place->place_layer);
+  data->place_l = place;
   place->place = description;
+  place->settings = settings;
+  place->radius = SCREEN_RADIUS;
   //place->place_layer = layer_create(GRect(0, top, 96, 48));
   layer_set_update_proc(place->place_layer, draw_place_bubble);
   layer_add_child(parent, place->place_layer);
@@ -97,9 +109,9 @@ void create_place_layer_default(place_layer *place, struct place_descrition *des
   //   strncpy(place->place->place_name, "Test", 5);
   
   bounds = layer_get_bounds(place->place_layer);
- 
+  
   place->place_name_layer = text_layer_create(GRect(0, 0, bounds.size.w, 16));
-  text_layer_set_text_color(place->place_name_layer, settings.TextColor);
+  text_layer_set_text_color(place->place_name_layer, place->settings->TextColor);
   text_layer_set_background_color(place->place_name_layer, GColorClear);
   //text_layer_set_background_color(place->place_name_layer, GColorBlue);
   text_layer_set_font(place->place_name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -112,7 +124,7 @@ void create_place_layer_default(place_layer *place, struct place_descrition *des
   render_place_name(place, true);
   
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
-  text_layer_set_text_color(place->place_time_layer, settings.TextColor);
+  text_layer_set_text_color(place->place_time_layer, place->settings->TextColor);
   text_layer_set_background_color(place->place_time_layer, GColorClear);
   //text_layer_set_background_color(place->place_time_layer, GColorGreen);
   text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));

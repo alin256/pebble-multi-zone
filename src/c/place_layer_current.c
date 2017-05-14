@@ -1,3 +1,4 @@
+#ifdef PLACE_CURRENT_LAYER_ENABLED
 #include <pebble.h>
 #include "place_layer_current.h"
 
@@ -192,4 +193,5 @@ static void create_place_layer_floating(place_descr *place, struct place_descrit
   layer_mark_dirty(place->place_layer);
 
 }
+#endif
 

@@ -1,6 +1,10 @@
 #include <pebble.h>
 #include "comunication.h"
 
+// static void request_locaion(){
+//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Location requested !"); 
+//   send_position_request();
+// }
 
 
 // // Write message to buffer & send

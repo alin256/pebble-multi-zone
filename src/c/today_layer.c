@@ -2,6 +2,13 @@
 #include "today_layer.h"
 #include "map_layer.h"
 #include "utils.h"
+#include "src/c/map_layer.h"
+
+//TODO remove defines from here
+//const uint16_t 
+#define WIDTH 144
+//const uint16_t 
+#define HEIGHT 72
 
 const int date_width =  WIDTH / 4;
 const int date_height =  HEIGHT / 3;
