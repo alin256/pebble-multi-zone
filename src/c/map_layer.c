@@ -1,10 +1,18 @@
 #include <pebble.h>
 #include "map_layer.h"
 
+static int redraw_counter = 500;
+
 struct my_point{
   int32_t x; //0 .. trig max angle
   int32_t y; //-trig max angle/2 .. trig max angle/2
 };
+
+GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds){
+  int16_t x_m = x*bounds.w/TRIG_MAX_ANGLE;
+  int16_t y_m = y*bounds.h*2/TRIG_MAX_ANGLE; //up to pi
+  return GPoint(x_m, y_m);
+}
 
 
 struct my_point get_sun_point(int time){
