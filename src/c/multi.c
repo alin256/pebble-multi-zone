@@ -19,8 +19,9 @@
 #include "settings.h"
 #include "place_layer.h"
 #include "map_layer.h"
+#include "arrows_layer.h"
 
-//#include "arrows_layer.h"
+
 //#include "today_layer.h"
 
 //window
@@ -28,7 +29,7 @@ static Window *s_window;
 
 //Layers
 static struct MapLayer map_layer_struct;
-// static Layer *arrow_layer1, *arrow_layer2;
+static Layer *arrow_layer1, *arrow_layer2;
 
   
 //static bool position_known = false;
@@ -70,40 +71,45 @@ static void window_load(Window *window) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading settings");
 
   /////////////////////////////////////////////////////////////////
+  //map layer
+  Layer *map_layer = map_leyer_create(GPoint(0, 48), &map_layer_struct);
+  layer_add_child(window_layer, map_layer);
+  GRect map_frame = layer_get_bounds(map_layer);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading map"); 
+
+  ///////////////////////////////////////////////////////////////
+  //arrow layers
+  arrow_layer1 = arrows_layer_create(map_frame,
+                                     &place1, 
+                                     &settings, 
+                                     get_point_on_map,
+                                     false);
+  layer_add_child(map_layer, arrow_layer1);
+  arrow_layer2 = arrows_layer_create(map_frame,
+                                     &place2, 
+                                     &settings, 
+                                     get_point_on_map,
+                                     true);
+  layer_add_child(map_layer, arrow_layer2);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading arrows");
+  
+  /////////////////////////////////////////////////////////////////
   //place layers
   create_place_layer_default(&place1, &settings.place1, 0,
                              &settings, window_layer);
   create_place_layer_default(&place2, &settings.place2, 120,                                 
                              &settings, window_layer);
   bottom_place_layer = place2.place_layer;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading place layers");
-
-  /////////////////////////////////////////////////////////////////
-  //map layer
-  Layer *map_layer = map_leyer_create(GPoint(0, 48), &map_layer_struct);
-  layer_add_child(window_layer, map_layer);
-  GRect map_frame = layer_get_frame(map_layer);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading map"); 
-    
-  //   //arrow layers
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Loading arrows"); 
-  //   arrow_layer1 = arrows_layer_create(map_frame,
-  //                                  &place1, 
-  //                                  &settings, 
-  //                                  get_point_on_map,
-  //                                  false);
-  //   layer_add_child(map_layer_base, arrow_layer1);
-  //   arrow_layer2 = arrows_layer_create(map_frame,
-  //                                  &place2, 
-  //                                  &settings, 
-  //                                  get_point_on_map,
-  //                                  true);
-  //   layer_add_child(map_layer_base, arrow_layer2);
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done");
-    
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing updates");   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading place layers");  
+  
+  ///////////////////////////////////////////////////////////////
+  //loading settings
   handle_update_settings();
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done");   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done setting load");   
+  
+  ///////////////////////////////////////////////////////////////
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Making refresh");   
+  layer_mark_dirty(window_get_root_layer(window));
     
 
   //   //date
@@ -139,8 +145,8 @@ static void window_unload(Window *window) {
   
   //destroy_date_layer(&date_l);
   
-  //   layer_destroy(arrow_layer1);
-  //   layer_destroy(arrow_layer2);
+  layer_destroy(arrow_layer1);
+  layer_destroy(arrow_layer2);
     
   map_layer_destroy(&map_layer_struct);
   //unobstructed_area_service_unsubscribe();
@@ -156,21 +162,17 @@ static void handle_connection_change(bool connected){
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t now = time(NULL);
+  
+  /////////////////////////////////////////////////
   time_t time1 = now + place1.place->offset;
   place_layer_update_time(&place1, &time1);
   
+  /////////////////////////////////////////////////
   time_t time2 = now + place2.place->offset;
   place_layer_update_time(&place2, &time2);
- 
-  //Handling current time
-  //TODO upgrade
-  //   strftime(current.watch_str, sizeof(current.watch_str), clock_is_24h_style() ?
-  //                                           "%H:%M" : "%I:%M", tick_time);
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in current location (%s) is updated to: %s", 
-  //           settings.place_cur.place_name, current.watch_str); 
-  //handle_zone_change();
-  
-  //     map_layer_redraw_minute(&map_layer_struct);
+
+  /////////////////////////////////////////////////
+  map_layer_redraw_minute(&map_layer_struct);
   
 }
 

@@ -57,6 +57,16 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 {
 }
 
+void reorder_places_if_needed(struct place_descrition *place1, struct place_descrition *place2){
+  if (place1->y > place2->y){
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing place swap");
+    struct place_descrition tmp;
+    memcpy(&tmp, place1, sizeof(struct place_descrition));
+    memcpy(place1, place2, sizeof(struct place_descrition));
+    memcpy(place2, &tmp, sizeof(struct place_descrition));    
+  }
+}
+
 // Called when a message is received from PebbleKitJS
 void in_received_handler(DictionaryIterator *received, void *context)
 {
@@ -109,6 +119,9 @@ void in_received_handler(DictionaryIterator *received, void *context)
       x_t = dict_find(received, MESSAGE_KEY_P2X);
       y_t = dict_find(received, MESSAGE_KEY_P2Y);
       update_place(&settings->place2, city_t, offset_t, x_t, y_t);
+      
+      //reorder
+      reorder_places_if_needed(&settings->place1, &settings->place2);
 
       
       //GPS
