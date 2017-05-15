@@ -94,8 +94,10 @@ function doneLocation(locationDataString, keyPlace, keyX, keyY, keyZone, reason)
       c_address = c_address.replace("Island", "Isl.");
 
       dict[keyPlace] = c_address;
-      dict[keyX] = Math.floor((locationData.results[0].geometry.location.lng+180)*maxAngle/360);
-      dict[keyY] = Math.floor((-locationData.results[0].geometry.location.lat+90)*maxAngle/360);
+      dict[keyX] = Math.round((locationData.results[0].geometry.location.lng+180)*maxAngle/360);
+      dict[keyY] = Math.round((-locationData.results[0].geometry.location.lat)*maxAngle/180);
+        //Math.round((locationData.results[0].geometry.location.lat)*maxAngle/360);
+      //dict[keyY] = Math.floor((-locationData.results[0].geometry.location.lat+90)*maxAngle/360);
       console.log("Location found: " + niceAddress  + 
                   JSON.stringify(locationData.results[0].geometry.location));
       fetchTimeZone(locationData.results[0].geometry.location.lat, locationData.results[0].geometry.location.lng, 
@@ -133,43 +135,54 @@ function httpGetAsync(theUrl, callback)
     xmlHttp.send(null);
 }
 
+///////location
+// function locationSuccess(pos) {
+//   var coordinates = pos.coords;
+//   console.log(coordinates);
+//   //messageKeys.CurPlace, 
+//   var keyX = messageKeys.P_CUR_X;
+//   var keyY = messageKeys.P_CUR_Y;
+//   dict[keyX] = Math.floor((coordinates.longitude+180)*maxAngle/360);
+//   //readonly attribute double latitude;
+//   //readonly attribute double longitude;
+//   dict[keyY] = Math.floor((-coordinates.latitude+90)*maxAngle/360);
+//   dict[messageKeys.UpdateReason] = 42; //GPS
+//   Pebble.sendAppMessage(dict, function(e) {
+//       console.log('Sent update for current location');
+//     }, function(e) {
+//       console.log('Failed to send config data!');
+//       console.log(JSON.stringify(e));
+//     });
+// }
 
-function locationSuccess(pos) {
-  var coordinates = pos.coords;
-  console.log(coordinates);
-  //messageKeys.CurPlace, 
-  var keyX = messageKeys.P_CUR_X;
-  var keyY = messageKeys.P_CUR_Y;
-  dict[keyX] = Math.floor((coordinates.longitude+180)*maxAngle/360);
-  //readonly attribute double latitude;
-  //readonly attribute double longitude;
-  dict[keyY] = Math.floor((-coordinates.latitude+90)*maxAngle/360);
-  dict[messageKeys.UpdateReason] = 42; //GPS
-  Pebble.sendAppMessage(dict, function(e) {
-      console.log('Sent update for current location');
-    }, function(e) {
-      console.log('Failed to send config data!');
-      console.log(JSON.stringify(e));
-    });
-}
+// function locationError(err) {
+//   console.warn('location error (' + err.code + '): ' + err.message);
+//   dict[messageKeys.UpdateReason] = 43; //no GPS
+//   Pebble.sendAppMessage(dict, function(e) {
+//       console.log('Sent update for current location');
+//     }, function(e) {
+//       console.log('Failed to send config data!');
+//       console.log(JSON.stringify(e));
+//     });  
+// }
 
-function locationError(err) {
-  console.warn('location error (' + err.code + '): ' + err.message);
-  dict[messageKeys.UpdateReason] = 43; //no GPS
-  Pebble.sendAppMessage(dict, function(e) {
-      console.log('Sent update for current location');
-    }, function(e) {
-      console.log('Failed to send config data!');
-      console.log(JSON.stringify(e));
-    });  
-}
+// var locationOptions = {
+//   'enableHighAccuracy': false,
+//   'timeout': 5000, //do not update if not available
+//   'maximumAge': 1200000
+// };
 
-var locationOptions = {
-  'enableHighAccuracy': false,
-  'timeout': 5000, //do not update if not available
-  'maximumAge': 1200000
-};
+// Pebble.addEventListener('appmessage', function (e) {
+//   console.log('message: ');
+//   console.log(e.payload.Request);
+//   if (e.payload.Request == 1){
+//    navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
+//      locationOptions);
+//    console.log('Position requested!');
+//   }
+// });
 
+////// other
 // Pebble.addEventListener('ready', function (e) {
 //   console.log('connect!' + e.ready);
 //   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
@@ -177,15 +190,6 @@ var locationOptions = {
 //   console.log(e.type);
 // });
 
-Pebble.addEventListener('appmessage', function (e) {
-  console.log('message: ');
-  console.log(e.payload.Request);
-  if (e.payload.Request == 1){
-   navigator.geolocation.getCurrentPosition(locationSuccess, locationError,
-     locationOptions);
-   console.log('Position requested!');
-  }
-});
 
 // // Fetch stock data for a given stock symbol (NYSE or NASDAQ only) from markitondemand.com
 // // & send the stock price back to the watch via app message

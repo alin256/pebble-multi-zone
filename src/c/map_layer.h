@@ -14,8 +14,8 @@ struct MapLayer{
   //BitmapLayer *tmp_layer;
 };
 
-GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds);
-void get_dark_point_map(int time, int32_t* x, int32_t* y);
+GPoint get_point_on_map(int32_t x, int32_t y);
+GPoint get_dark_point_map(int time);
 
 Layer* map_leyer_create(GPoint origin, struct MapLayer* map_layer);
 void map_layer_destroy(struct MapLayer* map_layer);

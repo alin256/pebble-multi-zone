@@ -17,6 +17,6 @@
 #endif
 
 
-void layer_set_center(Layer* layer, int x, int y);
+void layer_set_center(Layer* layer, GPoint point);
 
 #endif

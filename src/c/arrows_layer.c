@@ -29,7 +29,7 @@ void draw_arrows(struct Layer *layer, GContext *ctx){
   
   //set up coords
   GPoint p1_m = get_point_on_map(params->my_place_layer->place->x, 
-                                 params->my_place_layer->place->y, bounds.size);
+                                 params->my_place_layer->place->y);
   //GPoint p2_m = get_point_on_map(place2.place->x, place2.place->y, bounds.size);
 
   int16_t y1_con = 0;

@@ -2,12 +2,12 @@
 #define TODAY_LAYER_H
 
 
-#ifdef TODAY_LAYER_ENABLED
 #include <pebble.h>
 
 struct date_layer{
 //layer with date
   Layer *date_root_layer;
+  Layer *floating_layer;
   BitmapLayer *today_layer;
   GBitmap *today_pic;
   Layer *ceparator_layer;
@@ -17,8 +17,7 @@ struct date_layer{
 };
 
 
-Layer* create_date_layer(struct date_layer *date_l);
-
+Layer* date_layer_create(GRect frame, struct date_layer *date_l);
 void destroy_date_layer(struct date_layer *date_l);
-#endif
+
 #endif

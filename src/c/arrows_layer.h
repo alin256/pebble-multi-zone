@@ -5,7 +5,7 @@
 #include "place_layer.h"
 #include "settings.h"
 
-typedef GPoint GetPointOnMap(int32_t x, int32_t y, GSize bounds);
+typedef GPoint GetPointOnMap(int32_t x, int32_t y);
 
 struct ArrowLayerParams{
   GetPointOnMap* get_point_on_map;

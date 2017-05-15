@@ -20,9 +20,7 @@
 #include "place_layer.h"
 #include "map_layer.h"
 #include "arrows_layer.h"
-
-
-//#include "today_layer.h"
+#include "today_layer.h"
 
 //window
 static Window *s_window;  
@@ -39,7 +37,7 @@ const time_t OUTDATE_TIME = 1200;
 static Settings settings;
 static SettingsHandler settings_handler;
   
-//static struct date_layer date_l;
+static struct date_layer date_l;
 
 static place_layer place1, place2;
 
@@ -92,6 +90,12 @@ static void window_load(Window *window) {
                                      true);
   layer_add_child(map_layer, arrow_layer2);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading arrows");
+
+  /////////////////////////////////////////////////////////////////
+  //date
+  Layer *date_root = date_layer_create(map_frame, &date_l);
+  layer_add_child(map_layer, date_root);
+
   
   /////////////////////////////////////////////////////////////////
   //place layers
@@ -112,9 +116,6 @@ static void window_load(Window *window) {
   layer_mark_dirty(window_get_root_layer(window));
     
 
-  //   //date
-  //   Layer *date_root = create_date_layer(&date_l);
-  //   layer_add_child(bitmap_layer_get_layer(map_layer), date_root);
     
   //   int32_t x, y;
   //   get_dark_point_map((int) time(NULL), &x, &y);
@@ -124,26 +125,21 @@ static void window_load(Window *window) {
   //create_place_layer_floating(&current, &settings.place_cur, bitmap_layer_get_layer( map_layer));
   //layer_set_hidden(current.place_layer, true);
   
+  
+  //TODO move logic to outcide
   //   //event animation API 4.0
   //   UnobstructedAreaHandlers handlers = {
   //     .will_change = prv_unobstructed_will_change,
   //     .change = prv_unobstructed_change
   //   };
   //   unobstructed_area_service_subscribe(handlers, NULL);
-  
-  //panel switching - to be removed
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Going to swap pannels");
-  //   switch_panels_if_required();
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Going to update the floating pannel");
-  //   update_floating_place(&current);
-  //   APP_LOG(APP_LOG_LEVEL_DEBUG, "Loading complete");
 }
 
 static void window_unload(Window *window) {
   destroy_place_layer(&place1);
   destroy_place_layer(&place2);
   
-  //destroy_date_layer(&date_l);
+  destroy_date_layer(&date_l);
   
   layer_destroy(arrow_layer1);
   layer_destroy(arrow_layer2);

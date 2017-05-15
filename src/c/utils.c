@@ -2,11 +2,11 @@
 #include "utils.h"
 
 
-void layer_set_center(Layer* layer, int x, int y){
+void layer_set_center(Layer* layer, GPoint p){
   GSize size = layer_get_frame(layer).size;
   int w = size.w;
   int h = size.h;
-  GRect new_frame = GRect(x - w/2, y-h/2, w, h);  
+  GRect new_frame = GRect(p.x - (w+1)/2, p.y-(h+1)/2, w, h);  
   layer_set_frame(layer, new_frame);
 }
 

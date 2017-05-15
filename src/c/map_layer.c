@@ -45,6 +45,7 @@ struct my_point get_sun_point(int time){
   // Earth's inclination is 23.4 degrees, so sun should vary 23.4/90=.26 up and down
   sun_point.y = -sin_lookup((day_of_year - 0.2164) * TRIG_MAX_ANGLE) * .26 * .25;
   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Sun point: %d, %d", sun_point.x, sun_point.y);
   return sun_point;
 }
 
@@ -52,6 +53,7 @@ struct my_point get_dark_point(int time){
   struct my_point dark_point = get_sun_point(time);
   dark_point.x = (dark_point.x + TRIG_MAX_ANGLE/2) % TRIG_MAX_ANGLE;
   dark_point.y = - dark_point.y;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Dark point: %d, %d", dark_point.x, dark_point.y);
   return dark_point;
 }
 
@@ -59,11 +61,25 @@ struct my_point get_dark_point(int time){
 
 // }
 
-void get_dark_point_map(int time, int32_t* x, int32_t* y){
+GPoint get_point_on_map(int32_t x, int32_t y){
+  //GSize bounds = GSize(WIDTH, HEIGHT);
+  GPoint dark;
+  dark.x = (x*WIDTH+TRIG_MAX_ANGLE/2)/TRIG_MAX_ANGLE;
+  dark.y = ((TRIG_MAX_ANGLE/2+y)*HEIGHT+TRIG_MAX_ANGLE/2)/TRIG_MAX_ANGLE;
+  //dark.x = x*WIDTH/TRIG_MAX_ANGLE;
+  //dark.y = y*HEIGHT*2/TRIG_MAX_ANGLE; //up to pi
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "coordinates on map: %d %d", dark.x, dark.y);
+  return dark;
+}
+
+
+GPoint get_dark_point_map(int time){
   struct my_point p = get_dark_point(time);
-  *x = p.x*WIDTH/TRIG_MAX_ANGLE;
-  *y = (TRIG_MAX_ANGLE/2+p.y)*HEIGHT/TRIG_MAX_ANGLE;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "coordinates on map: %d %d", *x, *y);
+  //   GPoint dark;
+  //   dark.x = p.x*WIDTH/TRIG_MAX_ANGLE;
+  //   dark.y = (TRIG_MAX_ANGLE/2+p.y)*HEIGHT/TRIG_MAX_ANGLE;
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "coordinates on map: %d %d", dark.x, dark.y);
+  return get_point_on_map(p.x, p.y);
 }
 
 //piece of code modified from:
@@ -80,22 +96,22 @@ void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
   int sun_x = sun_point.x;
   int sun_y = sun_point.y;
   //get dark
-  struct my_point dark_point = get_dark_point(now);
-  int32_t dark_x_map = dark_point.x * WIDTH / TRIG_MAX_ANGLE;
+  //struct my_point dark_point = get_dark_point(now);
+  //int32_t dark_x_map = dark_point.x * WIDTH / TRIG_MAX_ANGLE;
   // ##### draw the bitmap
   int x, y;
   for(x = 0; x < WIDTH; x++) {
     int x_angle = (int)((float)TRIG_MAX_ANGLE * (float)x / (float)(WIDTH));
     for(y = 0; y < HEIGHT; y++) {
       //divider between day and night
-      if (dark_x_map == x && y%5 > 1){
-        #ifdef PBL_BW
-        #else
-        int byte_tmp = y * gbitmap_get_bytes_per_row(three_worlds) + x;
-        ((int8_t *)gbitmap_get_data(three_worlds))[byte_tmp] = -1;
-        continue;
-        #endif
-      }
+      //       if (dark_x_map == x && y%5 > 1){
+      //         #ifdef PBL_BW
+      //         #else
+      //         int byte_tmp = y * gbitmap_get_bytes_per_row(three_worlds) + x;
+      //         ((int8_t *)gbitmap_get_data(three_worlds))[byte_tmp] = -1;
+      //         continue;
+      //         #endif
+      //       }
       int y_angle = (int)((float)TRIG_MAX_ANGLE * (float)y / (float)(HEIGHT * 2)) - TRIG_MAX_ANGLE/4;
       // spherical law of cosines
       float angle = ((float)sin_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);
@@ -160,11 +176,6 @@ void map_layer_destroy(struct MapLayer* map_layer){
   gbitmap_destroy(map_layer->image);
 }
 
-GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds){
-  int16_t x_m = x*bounds.w/TRIG_MAX_ANGLE;
-  int16_t y_m = y*bounds.h*2/TRIG_MAX_ANGLE; //up to pi
-  return GPoint(x_m, y_m);
-}
 
 
 
