@@ -63,28 +63,28 @@ module.exports = [
       }
     ]
   },
-  {
-    "type": "section",
-    "items": [
-      {
-        "type": "heading",
-        "defaultValue": "More Settings"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "ShowLocalTime",
-        "label": "Show local time buble",
-        "defaultValue": false
-      }
-//       ,
+//   {
+//     "type": "section",
+//     "items": [
+//       {
+//         "type": "heading",
+//         "defaultValue": "More Settings"
+//       },
 //       {
 //         "type": "toggle",
-//         "messageKey": "Animations",
-//         "label": "Enable Animations",
+//         "messageKey": "ShowLocalTime",
+//         "label": "Show local time buble",
 //         "defaultValue": false
 //       }
-    ]
-  },
+// //       ,
+// //       {
+// //         "type": "toggle",
+// //         "messageKey": "Animations",
+// //         "label": "Enable Animations",
+// //         "defaultValue": false
+// //       }
+//     ]
+//   },
   {
     "type": "submit",
     "defaultValue": "Save Settings"

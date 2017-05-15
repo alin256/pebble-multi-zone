@@ -9,21 +9,19 @@ struct MapLayer{
   //map things
   BitmapLayer *map_layer;
   GBitmap *three_worlds;
-  GBitmap *image;
+  GBitmap *image;  
   int32_t redraw_counter;
   //BitmapLayer *tmp_layer;
 };
 
 GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds);
-  
 void get_dark_point_map(int time, int32_t* x, int32_t* y);
 
-//void draw_map(struct Layer *layer, GContext *ctx);
-void draw_earth(GBitmap* three_worlds, struct Layer* map_layer);
-
-BitmapLayer* map_leyer_create(GPoint origin, struct MapLayer* map_layer);
-
+Layer* map_leyer_create(GPoint origin, struct MapLayer* map_layer);
 void map_layer_destroy(struct MapLayer* map_layer);
+
+//void draw_map(struct Layer *layer, GContext *ctx);
+//void draw_earth(GBitmap* three_worlds, struct Layer* map_layer);
 
 void map_layer_redraw_minute(struct MapLayer *map_layer_struct);
 

@@ -8,7 +8,6 @@
 #define SETTINGS_KEY 1
 #define SETTINGS_VERSION_KEY 2
 
-#define current_settings_version 5
 
 // Define our settings struct
 typedef struct ClaySettings {

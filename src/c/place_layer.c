@@ -3,6 +3,13 @@
 #include "place_description.h"
 #include "settings.h"
 
+void place_layer_update_time(place_layer *place, time_t *time){
+  struct tm *tick_time = gmtime(time);
+  strftime(place->watch_str, sizeof(place->watch_str), clock_is_24h_style() ?
+                                          "%H:%M" : "%I:%M", tick_time);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place->place_name, place->watch_str); 
+  layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
+}
 
 
 void destroy_place_layer(place_layer *place){
@@ -23,7 +30,7 @@ void draw_place_bubble(struct Layer *layer, GContext *ctx){
   //background
   graphics_context_set_antialiased(ctx, false);
   
-  Settings *settings = layer_get_data(layer);
+  Settings *settings = place->settings;
   graphics_context_set_stroke_color(ctx, settings->BackgroundColor);
   graphics_context_set_fill_color(ctx, settings->BackgroundColor);
   graphics_fill_rect(ctx, bounds, place->radius, GCornersAll);
@@ -31,6 +38,7 @@ void draw_place_bubble(struct Layer *layer, GContext *ctx){
   //frame
   graphics_context_set_antialiased(ctx, true);
   graphics_context_set_stroke_color(ctx, settings->ForegroundColor);
+  //graphics_context_set_stroke_color(ctx, GColorRed);
   graphics_draw_round_rect(ctx, bounds, place->radius);
 }
 

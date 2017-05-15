@@ -12,6 +12,9 @@
 #define SCREEN_RADIUS 0
 #endif
 
+//TODO create text animation
+
+
 struct place_visualization{
   Layer *place_layer;
   TextLayer *place_name_layer;
@@ -34,5 +37,6 @@ void create_place_layer_default(place_layer *place,
 void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset_t, Tuple* x_t, Tuple* y_t);
 void destroy_place_layer(place_layer *place);
 void update_place_layer(place_layer *place);
+void place_layer_update_time(place_layer *place, time_t *time);
 
 #endif

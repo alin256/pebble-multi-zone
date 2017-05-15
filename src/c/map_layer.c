@@ -22,48 +22,8 @@ GRect map_leyer_get_frame(struct MapLayer* map_layer){
 }
 
 void map_leyer_set_frame(struct MapLayer* map_layer, GRect frame){
-  return layer_set_frame(bitmap_layer_get_layer(map_layer->map_layer), frame);
+  layer_set_frame(bitmap_layer_get_layer(map_layer->map_layer), frame);
 }
-
-
-void map_layer_redraw_minute(struct MapLayer *map_layer_struct){
-  map_layer_struct->redraw_counter++;
-  if (map_layer_struct->redraw_counter >= REDRAW_INTERVAL_MINUTES) {
-    draw_earth(map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
-    map_layer_struct->redraw_counter = 0;
-  }
-
-}
-
-BitmapLayer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){
-  // Load the image
-  map_layer->three_worlds = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_3_WORLDS);
-  map_layer->image = gbitmap_create_as_sub_bitmap(map_layer->three_worlds, GRect(0, 0, WIDTH, HEIGHT));
-  
-  GRect map_bounds = GRect(origin.x, origin.y, WIDTH, HEIGHT);
-  map_layer->map_layer = bitmap_layer_create(map_bounds);
-  bitmap_layer_set_bitmap(map_layer->map_layer, map_layer->image);
-  //(map_layer, draw_map);
-
-  return map_layer->map_layer;
-  //draw_earth();
-  
-  //tmp_layer = bitmap_layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
-  //bitmap_layer_set_bitmap(tmp_layer, three_worlds);
-  //layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
-}
-
-void map_layer_destroy(struct MapLayer* map_layer){
-  bitmap_layer_destroy(map_layer->map_layer);
-  gbitmap_destroy(map_layer->three_worlds);
-}
-
-GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds){
-  int16_t x_m = x*bounds.w/TRIG_MAX_ANGLE;
-  int16_t y_m = y*bounds.h*2/TRIG_MAX_ANGLE; //up to pi
-  return GPoint(x_m, y_m);
-}
-
 
 struct my_point get_sun_point(int time){
   float day_of_year; // value from 0 to 1 of progress through a year
@@ -106,10 +66,9 @@ void get_dark_point_map(int time, int32_t* x, int32_t* y){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "coordinates on map: %d %d", *x, *y);
 }
 
-
 //piece of code modified from:
 //davidfg4/pebble-day-night
-void draw_earth(GBitmap* three_worlds, struct Layer* map_layer) {
+void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
   // ##### calculate the time
 #ifdef PBL_SDK_2
   int now = (int)time(NULL) + time_offset;
@@ -163,6 +122,54 @@ void draw_earth(GBitmap* three_worlds, struct Layer* map_layer) {
   }
   layer_mark_dirty(map_layer);
 }
+
+
+void map_layer_redraw_minute(struct MapLayer *map_layer_struct){
+  map_layer_struct->redraw_counter++;
+  if (map_layer_struct->redraw_counter >= REDRAW_INTERVAL_MINUTES) {
+    draw_earth(map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
+    map_layer_struct->redraw_counter = 0;
+  }
+
+}
+
+Layer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){
+  // Load the image
+  map_layer->three_worlds = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_3_WORLDS);
+  map_layer->image = gbitmap_create_as_sub_bitmap(map_layer->three_worlds, GRect(0, 0, WIDTH, HEIGHT));
+  
+  GRect map_bounds = GRect(origin.x, origin.y, WIDTH, HEIGHT);
+  map_layer->map_layer = bitmap_layer_create(map_bounds);
+  bitmap_layer_set_bitmap(map_layer->map_layer, map_layer->image);
+  draw_earth(map_layer->three_worlds, bitmap_layer_get_layer(map_layer->map_layer));
+  map_layer->redraw_counter = 0; //large number
+  
+  //(map_layer, draw_map);
+
+  return bitmap_layer_get_layer(map_layer->map_layer);
+  //draw_earth();
+  
+  //tmp_layer = bitmap_layer_create(GRect(0,0, map_bounds.size.w, map_bounds.size.h));
+  //bitmap_layer_set_bitmap(tmp_layer, three_worlds);
+  //layer_add_child(map_layer, bitmap_layer_get_layer(tmp_layer));
+}
+
+void map_layer_destroy(struct MapLayer* map_layer){
+  bitmap_layer_destroy(map_layer->map_layer);
+  gbitmap_destroy(map_layer->three_worlds);
+  gbitmap_destroy(map_layer->image);
+}
+
+GPoint get_point_on_map(int32_t x, int32_t y, GSize bounds){
+  int16_t x_m = x*bounds.w/TRIG_MAX_ANGLE;
+  int16_t y_m = y*bounds.h*2/TRIG_MAX_ANGLE; //up to pi
+  return GPoint(x_m, y_m);
+}
+
+
+
+
+
 
 //void draw_map(struct Layer *layer, GContext *ctx) {
 //  graphics_draw_bitmap_in_rect(ctx, image, gbitmap_get_bounds(image));
