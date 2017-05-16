@@ -34,16 +34,21 @@ TextLayer* date_text_layer_create_with_font(GRect rect, GFont font, Layer *root)
 }
 
 struct RootLayerData{
-  Layer *floating_layer;
+  struct date_layer *today_layer;
+  char dow1[5];
+  char dow2[5];
+  char date1[5];
+  char date2[5];
+  char time[10];
 };
 
 void update_location(struct Layer *layer){
   layer_set_center(layer, get_dark_point_map(time(NULL)));
 }
 
-void move_floating_layer(struct Layer* root_layer, GContext *ctx){
-  struct RootLayerData* my_data = layer_get_data(root_layer);
-  update_location(my_data->floating_layer);
+void update_overlay_layer(struct Layer* root_layer, GContext *ctx){
+  struct RootLayerData *data = layer_get_data(root_layer);
+  update_location(data->today_layer->floating_layer);
 }
 
 void draw_cross(struct Layer *layer, GContext *ctx){
@@ -69,32 +74,48 @@ void ceparator_layer_update(struct Layer *layer, GContext *ctx){
   }
 }
 
+// //overlay over map layer
+// struct date_layer{
+//   Layer *date_root_layer;
+//   Layer *floating_layer;
+//   BitmapLayer *today_layer;
+//   BitmapLayer *sun_layer;
+//   GBitmap *today_pic;
+//   GBitmap *cur_today_pic;
+//   //GBitmap *sun_pic;
+//   Layer *ceparator_layer;
+//   TextLayer *date_left;
+//   TextLayer *dow_left;
+//   TextLayer *date_right;
+//   TextLayer *dow_right;
+//   TextLayer *local_time;
+//   Settings *settings;
+// };
 
 Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   //floating layer
   date_l->floating_layer = layer_create(GRect(0, 0, date_width, date_height));
   layer_set_update_proc(date_l->floating_layer, draw_cross);
-  //root_layer
-  date_l->date_root_layer = layer_create_with_data(frame, sizeof(struct RootLayerData));
-  struct RootLayerData* root_data = layer_get_data(date_l->date_root_layer);
-  root_data->floating_layer = date_l->floating_layer; 
-  layer_add_child(date_l->date_root_layer, date_l->floating_layer);
-  layer_set_update_proc(date_l->date_root_layer, move_floating_layer);
   
-  //update_location(date_l->floating_layer);
-  //layer_set_center(date_l->date_root_layer, );
-  //date_l->date_root_layer = layer_create(GRect(0, 0, date_width*2+3, HEIGHT));
+  //root_layer
+  date_l->date_root_layer = layer_create_with_data(frame, sizeof(struct date_layer*));
+  struct RootLayerData* data = layer_get_data(date_l->date_root_layer);
+  data->today_layer = date_l; 
+  layer_add_child(date_l->date_root_layer, date_l->floating_layer);
+  layer_set_update_proc(date_l->date_root_layer, update_overlay_layer);
+  
   //today
   //image
   date_l->today_pic = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TODAY_7);
   //layer
-  //TODO correct rect
-  date_l->today_layer = bitmap_layer_create(GRect(0, 0, 7, gbitmap_get_bounds(date_l->today_pic).size.h));
+  date_l->today_layer = bitmap_layer_create(GRect(0, 0, 
+                                                  7, gbitmap_get_bounds(date_l->today_pic).size.h));
   bitmap_layer_set_bitmap(date_l->today_layer, date_l->today_pic);
   bitmap_layer_set_background_color(date_l->today_layer, GColorClear);
   bitmap_layer_set_compositing_mode(date_l->today_layer, GCompOpSet);
-  //layer_set_center(bitmap_layer_get_layer(date_l->today_layer), date_width/2, HEIGHT/2);
-  //layer_add_child(date_l->date_root_layer, bitmap_layer_get_layer(date_l->today_layer));
+  layer_add_child(date_l->floating_layer, bitmap_layer_get_layer(date_l->today_layer));
+  //TODO check set center
+  layer_set_center(bitmap_layer_get_layer(date_l->today_layer), GPoint((date_width+1)/2+1, (date_height+1)/2));
   
   //left
   date_l->date_left = date_text_layer_create_with_font(
