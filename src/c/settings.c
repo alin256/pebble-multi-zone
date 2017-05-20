@@ -1,7 +1,10 @@
 #include <pebble.h>
 #include "settings.h"
 
-#define current_settings_version 2
+//version should be below 10000
+#define SETTINGS_VERSION 10
+//to prevent unintential bugs
+#define current_settings_version SETTINGS_VERSION+sizeof(Settings)*10000
 
 
 // Save the settings to persistent storage
@@ -23,12 +26,25 @@ void prv_save_settings(Settings* settings)
 //   time_t last_update;
 // } Settings;
 
+void init_colors_bubble(Settings *settings){
+  settings->BackgroundColor = GColorBlack;
+  settings->ForegroundColor = GColorOrange;
+  settings->TextColor = GColorWhite;
+}
+
+void init_colors_map(Settings *settings){
+  settings->HighlightColor = GColorWhite;
+  settings->ShadowColor = GColorLightGray;
+}
+
 void init_settings(Settings *settings){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "No settings found. Applying default setting.");
-  settings->BackgroundColor = GColorBlack;
-  settings->ForegroundColor = GColorRed;
-  settings->TextColor = GColorWhite;
-  settings->show_local_time = false;
+  settings->show_local_time = true;
+  settings->allways_show_local_time = false;
+  settings->show_date = true;
+  settings->show_dow = false;
+  init_colors_bubble(settings);
+  init_colors_map(settings);
 }
 
 void prv_load_settings(Settings* settings)
@@ -80,20 +96,62 @@ void in_received_handler(DictionaryIterator *received, void *context)
     settings->show_local_time = show_local_t->value->int16;
   }
   
-  Tuple *back_color_t = dict_find(received, MESSAGE_KEY_BackgroundColor);
-  if (back_color_t){
-    settings->BackgroundColor = GColorFromHEX(back_color_t->value->int32);
+  Tuple *allways_local_t = dict_find(received, MESSAGE_KEY_ForceShowLocalTime);
+  if (allways_local_t){
+    settings->allways_show_local_time = show_local_t->value->int16;
   }
   
-  Tuple *front_color_t = dict_find(received, MESSAGE_KEY_ForegroundColor);
-  if (front_color_t){
-    settings->ForegroundColor = GColorFromHEX(front_color_t->value->int32);
+  Tuple *show_dow_t = dict_find(received, MESSAGE_KEY_ShowDOW);
+  if (show_dow_t){
+    settings->show_dow = show_dow_t->value->uint16;
   }
-
-  Tuple *text_color_t = dict_find(received, MESSAGE_KEY_TextColor);
-  if (text_color_t){
-    settings->TextColor = GColorFromHEX(text_color_t->value->int32);
+  
+  Tuple *show_date_t = dict_find(received, MESSAGE_KEY_ShowDate);
+  if (show_date_t){
+    settings->show_date = show_date_t->value->int16;
   }
+  
+  Tuple *custom_color_bubles_t = dict_find(received, MESSAGE_KEY_CustomColorBubbles);
+  if (custom_color_bubles_t){
+    if ( custom_color_bubles_t->value->int16){
+      Tuple *back_color_t = dict_find(received, MESSAGE_KEY_BackgroundColor);
+      if (back_color_t){
+        settings->BackgroundColor = GColorFromHEX(back_color_t->value->int32);
+      }
+      
+      Tuple *front_color_t = dict_find(received, MESSAGE_KEY_ForegroundColor);
+      if (front_color_t){
+        settings->ForegroundColor = GColorFromHEX(front_color_t->value->int32);
+      }
+    
+      Tuple *text_color_t = dict_find(received, MESSAGE_KEY_TextColor);
+      if (text_color_t){
+        settings->TextColor = GColorFromHEX(text_color_t->value->int32);
+      }
+    }
+    else{
+      init_colors_bubble(settings);
+    }
+  }
+  
+  Tuple *custom_color_map_t = dict_find(received, MESSAGE_KEY_CustomColorsMap);
+  if (custom_color_map_t){
+    if ( custom_color_map_t->value->int16){
+      Tuple *high_color_t = dict_find(received, MESSAGE_KEY_HighlightMapColor);
+      if (high_color_t){
+        settings->BackgroundColor = GColorFromHEX(high_color_t->value->int32);
+      }
+      Tuple *low_color_t = dict_find(received, MESSAGE_KEY_GrayMapColor);
+      if (low_color_t){
+        settings->ShadowColor = GColorFromHEX(low_color_t->value->int32);
+      }
+    }
+    else{
+      init_colors_map(settings);
+    }
+  }
+  
+ 
   
   //if (reason_t)
   //update of locations

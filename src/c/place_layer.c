@@ -3,10 +3,52 @@
 #include "place_description.h"
 #include "settings.h"
 
+#define WEEKDAY_S_LEN 2
+#define WEEKDAYS_STRING "SuMoTuWeThFrSa"
+
+struct PlaceLayerData{
+  place_layer* place_l;
+};
+
+
+//returns first unused position
+//i.e. null charachter position
+uint16_t str_change_to_dow_abbr(char *str){
+  int day_num = str[0]-'0';
+  if (day_num>6 || day_num<0){
+    return 0;
+  }
+  memcpy(str, &WEEKDAYS_STRING[WEEKDAY_S_LEN*day_num], WEEKDAY_S_LEN);
+  str[WEEKDAY_S_LEN] = ' ';
+  str[WEEKDAY_S_LEN+1] = '\0';
+  return WEEKDAY_S_LEN+1;
+}
+
 void place_layer_update_time(place_layer *place, time_t *time){
+  place->watch_str[0] = '\0';
+  
   struct tm *tick_time = gmtime(time);
-  strftime(place->watch_str, sizeof(place->watch_str), clock_is_24h_style() ?
-                                          "%H:%M" : "%I:%M", tick_time);
+  
+  bool hour_24 = clock_is_24h_style();
+  uint16_t pos = 0;
+  if (place->settings->show_dow){
+    strftime(place->watch_str, sizeof(place->watch_str), 
+           "%w", tick_time);
+    pos = str_change_to_dow_abbr(place->watch_str);
+    hour_24 = true;
+  }
+  
+  //TODO check AM/PM
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "digits = %d ", sizeof(&place->watch_str[pos])); 
+  strftime(&place->watch_str[pos], sizeof(place->watch_str)-pos, 
+            hour_24 ? "%H:%M" : "%I:%M", tick_time);
+  if (!hour_24){
+    char tmp[5];
+    strftime(&place->watch_str[pos], sizeof(tmp), 
+            "%P", tick_time);
+    strcat(place->watch_str, tmp);
+  }
+  
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place->place_name, place->watch_str); 
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
 }
@@ -18,13 +60,8 @@ void destroy_place_layer(place_layer *place){
   layer_destroy(place->place_layer);
 }
 
-struct PlaceLayerData{
-  place_layer* place_l;
-};
-
-
 void draw_place_bubble(struct Layer *layer, GContext *ctx){
-  struct PlaceLayerData* data = (struct PlaceLayerData*) layer_get_data(layer);
+  struct PlaceLayerData* data = layer_get_data(layer);
   place_layer *place = data->place_l;
   GRect bounds = layer_get_bounds(layer);
   //background

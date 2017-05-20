@@ -19,7 +19,7 @@ struct place_visualization{
   Layer *place_layer;
   TextLayer *place_name_layer;
   TextLayer *place_time_layer;
-  char watch_str[8];
+  char watch_str[12];
   char place_str[100];
   struct place_descrition *place;
   Settings *settings;

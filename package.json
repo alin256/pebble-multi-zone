@@ -33,7 +33,14 @@
             "CurPlace",
             "Request",
             "ShowLocalTime",
-            "TextColor"
+            "TextColor",
+            "HighlightMapColor",
+            "GrayMapColor",
+            "CustomColorsMap",
+            "CustomColorBubbles",
+            "ForceShowLocalTime",
+            "ShowDate",
+            "ShowDOW"
         ],
         "projectType": "native",
         "resources": {

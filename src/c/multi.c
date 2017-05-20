@@ -58,6 +58,30 @@ static void handle_update_settings(){
     layer_mark_dirty(window_get_root_layer(s_window));
 }
 
+static void handle_connection_change(bool connected){
+  if (connected){
+    //TODO improve logic
+    //request_locaion();
+  }
+}
+
+static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
+  time_t now = time(NULL);
+  
+  /////////////////////////////////////////////////
+  time_t time1 = now + place1.place->offset;
+  place_layer_update_time(&place1, &time1);
+  
+  /////////////////////////////////////////////////
+  time_t time2 = now + place2.place->offset;
+  place_layer_update_time(&place2, &time2);
+
+  /////////////////////////////////////////////////
+  map_layer_redraw_minute(&map_layer_struct);
+  
+}
+
+
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   //GRect bounds = layer_get_bounds(window_layer);
@@ -149,28 +173,6 @@ static void window_unload(Window *window) {
   
 }
 
-static void handle_connection_change(bool connected){
-  if (connected){
-    //TODO improve logic
-    //request_locaion();
-  }
-}
-
-static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
-  time_t now = time(NULL);
-  
-  /////////////////////////////////////////////////
-  time_t time1 = now + place1.place->offset;
-  place_layer_update_time(&place1, &time1);
-  
-  /////////////////////////////////////////////////
-  time_t time2 = now + place2.place->offset;
-  place_layer_update_time(&place2, &time2);
-
-  /////////////////////////////////////////////////
-  map_layer_redraw_minute(&map_layer_struct);
-  
-}
 
 static void init(void) {
   s_window = window_create();  

@@ -16,9 +16,14 @@ typedef struct ClaySettings {
   GColor TextColor;
   struct place_descrition place1;
   struct place_descrition place2;
-  struct place_descrition place_cur;
-  int8_t show_local_time;
-  time_t last_update;
+  //struct place_descrition place_cur;
+  //time_t last_update;
+  bool show_dow;
+  bool show_local_time;
+  bool allways_show_local_time;
+  bool show_date;
+  GColor HighlightColor;
+  GColor ShadowColor;
 } Settings;
 
 typedef struct SettingsHandler{
