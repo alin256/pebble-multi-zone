@@ -1,4 +1,4 @@
-#ifdef USE_TEXT_ANIMATION
+#ifdef USE_TEXT_ANIMATION_2
 #pragma once
 #include <pebble.h>
 

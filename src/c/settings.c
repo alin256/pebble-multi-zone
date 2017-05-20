@@ -1,17 +1,28 @@
 #include <pebble.h>
 #include "settings.h"
 
-//version should be below 10000
-#define SETTINGS_VERSION 10
-//to prevent unintential bugs
-#define current_settings_version SETTINGS_VERSION+sizeof(Settings)*10000
+
+// Persistent storage key
+#define SETTINGS_KEY 1
+#define SETTINGS_VERSION_KEY 2
 
 
 // Save the settings to persistent storage
 void prv_save_settings(Settings* settings)
 {
-  persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
-  persist_write_int(SETTINGS_VERSION_KEY, current_settings_version);
+  persist_write_data(SETTINGS_KEY, settings, sizeof(Settings));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, 
+          "Data length: (Settings) %d. Max length: %d.", 
+          sizeof(Settings),
+          PERSIST_DATA_MAX_LENGTH);
+  persist_write_int(SETTINGS_VERSION_KEY, SETTINGS_VERSION);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved settings success");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved Places: %s, %s", 
+                settings->place1.place_name, settings->place2.place_name);
+  //TODO remove
+  memset(settings, 0, sizeof(Settings));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Reload check");
+  prv_load_settings(settings);
 }
 
 // // Define our settings struct
@@ -33,8 +44,8 @@ void init_colors_bubble(Settings *settings){
 }
 
 void init_colors_map(Settings *settings){
-  settings->HighlightColor = GColorWhite;
-  settings->ShadowColor = GColorLightGray;
+  //settings->HighlightColor = GColorWhite;
+  //settings->ShadowColor = GColorLightGray;
 }
 
 void init_settings(Settings *settings){
@@ -45,6 +56,7 @@ void init_settings(Settings *settings){
   settings->show_dow = false;
   init_colors_bubble(settings);
   init_colors_map(settings);
+  prv_save_settings(settings);
 }
 
 void prv_load_settings(Settings* settings)
@@ -52,9 +64,11 @@ void prv_load_settings(Settings* settings)
   if (persist_exists(SETTINGS_KEY)){
     if (persist_exists(SETTINGS_VERSION_KEY)){
       int32_t set_ver = persist_read_int(SETTINGS_VERSION_KEY);
-      if (set_ver == current_settings_version){
-        persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+      if (set_ver == SETTINGS_VERSION && persist_get_size(SETTINGS_KEY) == sizeof(Settings)){
+        persist_read_data(SETTINGS_KEY, settings, sizeof(Settings));
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded settings successfully"); 
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded Places: %s, %s", 
+                settings->place1.place_name, settings->place2.place_name);
         return;
         //window_set_background_color(s_window, settings.BackgroundColor);
       }
@@ -139,7 +153,7 @@ void in_received_handler(DictionaryIterator *received, void *context)
     if ( custom_color_map_t->value->int16){
       Tuple *high_color_t = dict_find(received, MESSAGE_KEY_HighlightMapColor);
       if (high_color_t){
-        settings->BackgroundColor = GColorFromHEX(high_color_t->value->int32);
+        settings->HighlightColor = GColorFromHEX(high_color_t->value->int32);
       }
       Tuple *low_color_t = dict_find(received, MESSAGE_KEY_GrayMapColor);
       if (low_color_t){
@@ -198,9 +212,9 @@ void in_received_handler(DictionaryIterator *received, void *context)
       //         //position_known = false;         
       //       }
     }
-    prv_save_settings(settings);
-    handler->callback();
+
   }
-  
+  prv_save_settings(settings);
+  handler->callback();  
   //send_message();
 }

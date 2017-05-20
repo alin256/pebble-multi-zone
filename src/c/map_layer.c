@@ -85,6 +85,7 @@ GPoint get_dark_point_map(int time){
 //piece of code modified from:
 //davidfg4/pebble-day-night
 void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Appdating map image");
   // ##### calculate the time
 #ifdef PBL_SDK_2
   int now = (int)time(NULL) + time_offset;
@@ -137,16 +138,18 @@ void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
     }
   }
   layer_mark_dirty(map_layer);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done updating map image");
 }
 
 
 void map_layer_redraw_minute(struct MapLayer *map_layer_struct){
   map_layer_struct->redraw_counter++;
   if (map_layer_struct->redraw_counter >= REDRAW_INTERVAL_MINUTES) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing map on layer");
     draw_earth(map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
     map_layer_struct->redraw_counter = 0;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Done drawing map on layer");
   }
-
 }
 
 Layer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){

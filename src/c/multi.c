@@ -46,16 +46,11 @@ static Layer *bottom_place_layer;
 
 
 static void handle_update_settings(){
-    text_layer_set_text_color(place1.place_time_layer, settings.TextColor);
-    text_layer_set_text_color(place1.place_name_layer, settings.TextColor);
-    text_layer_set_text_color(place2.place_time_layer, settings.TextColor);
-    text_layer_set_text_color(place2.place_name_layer, settings.TextColor);
-    //     text_layer_set_text_color(current.place_time_layer, settings.TextColor);
-    //     text_layer_set_text_color(current.place_name_layer, settings.TextColor);
-    update_place_layer(&place1);
-    update_place_layer(&place2);
-    //     switch_panels_if_required();
-    layer_mark_dirty(window_get_root_layer(s_window));
+  place_handle_update_settings(&place1);
+  place_handle_update_settings(&place2);
+  date_layer_handle_update_settings(&date_l);
+  
+  layer_mark_dirty(window_get_root_layer(s_window));
 }
 
 static void handle_connection_change(bool connected){
@@ -77,12 +72,16 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   place_layer_update_time(&place2, &time2);
 
   /////////////////////////////////////////////////
+  date_layer_handle_minute_tick(&date_l, tick_time, units_changed);
+  
+  /////////////////////////////////////////////////
   map_layer_redraw_minute(&map_layer_struct);
   
 }
 
 
 static void window_load(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing window load");
   Layer *window_layer = window_get_root_layer(window);
   //GRect bounds = layer_get_bounds(window_layer);
   //TODO make ALL constants variable
@@ -117,6 +116,7 @@ static void window_load(Window *window) {
 
   /////////////////////////////////////////////////////////////////
   //date
+  date_l.settings = &settings;
   Layer *date_root = date_layer_create(map_frame, &date_l);
   layer_add_child(map_layer, date_root);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading overlay");
@@ -134,7 +134,7 @@ static void window_load(Window *window) {
   ///////////////////////////////////////////////////////////////
   //loading settings
   handle_update_settings();
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done setting load");   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done setting update handle");   
   
   ///////////////////////////////////////////////////////////////
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Making refresh");   
@@ -163,15 +163,18 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
   destroy_place_layer(&place1);
   destroy_place_layer(&place2);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroyed places");
   
   destroy_date_layer(&date_l);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroyed date layer");
   
   layer_destroy(arrow_layer1);
   layer_destroy(arrow_layer2);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroyed arrows");
     
   map_layer_destroy(&map_layer_struct);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroyed map");  
   //unobstructed_area_service_unsubscribe();
-  
 }
 
 

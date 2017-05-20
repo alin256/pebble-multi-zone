@@ -10,6 +10,11 @@ struct PlaceLayerData{
   place_layer* place_l;
 };
 
+void place_handle_update_settings(place_layer* pl){
+  text_layer_set_text_color(pl->place_time_layer, pl->settings->TextColor);
+  text_layer_set_text_color(pl->place_name_layer, pl->settings->TextColor);
+  update_place_layer(pl);
+}
 
 //returns first unused position
 //i.e. null charachter position
@@ -25,6 +30,7 @@ uint16_t str_change_to_dow_abbr(char *str){
 }
 
 void place_layer_update_time(place_layer *place, time_t *time){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Time update place");
   place->watch_str[0] = '\0';
   
   struct tm *tick_time = gmtime(time);

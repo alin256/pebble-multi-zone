@@ -4,26 +4,30 @@
 #include <pebble.h>
 #include "place_description.h"
 
-// Persistent storage key
-#define SETTINGS_KEY 1
-#define SETTINGS_VERSION_KEY 2
 
+#define SETTINGS_VERSION 100
 
 // Define our settings struct
 typedef struct ClaySettings {
+  GColor TextColor;
+  
   GColor BackgroundColor;
   GColor ForegroundColor;
-  GColor TextColor;
-  struct place_descrition place1;
-  struct place_descrition place2;
-  //struct place_descrition place_cur;
-  //time_t last_update;
-  bool show_dow;
-  bool show_local_time;
-  bool allways_show_local_time;
-  bool show_date;
+
   GColor HighlightColor;
   GColor ShadowColor;
+
+  struct place_descrition place1;
+  struct place_descrition place2;
+
+  //struct place_descrition place_cur;
+  //time_t last_update;
+  int8_t show_dow;
+  int8_t show_local_time;
+  int8_t allways_show_local_time;
+  int8_t show_date;
+
+  //int tmp;
 } Settings;
 
 typedef struct SettingsHandler{

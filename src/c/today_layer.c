@@ -20,6 +20,9 @@
 #define DATE_TEXT_WIDTH 20
 #define DATE_TEXT_HEIGHT 20
 
+#define LOCAL_TIME_HIGHT 20
+#define LOCAL_TIME_WIDTH 5*12
+
 TextLayer* date_text_layer_create_with_font(GRect rect, GFont font, Layer *root){
   TextLayer *cur = text_layer_create(rect);
   text_layer_set_text_color(cur, GColorWhite);
@@ -59,12 +62,27 @@ struct RootLayerData{
   TextLayer *date_right;
   //TextLayer *dow_right;
   TextLayer *local_time;
+  TextLayer *local_time_root;
 };
 
-void update_time(Layer* overlay_layer){
-  struct RootLayerData *data = layer_get_data(overlay_layer);
-  
+void date_layer_handle_minute_tick(struct date_layer *date_l, 
+                                   struct tm *tick_time, 
+                                   TimeUnits units_changed){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Updateing current time");
+  struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  strftime(data->time, sizeof(data->time), 
+           clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+  layer_mark_dirty(text_layer_get_layer(data->local_time));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done Updateing current time");
 }
+
+void date_layer_handle_update_settings(struct date_layer *date_l){
+  struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  text_layer_set_text_color(data->local_time, date_l->settings->HighlightColor);
+  //text_layer_set_text_color(data->local_time, GColorWhite);
+  layer_mark_dirty(date_l->date_root_layer);
+}
+
 
 void update_location(struct Layer *layer){
   layer_set_center(layer, get_dark_point_map(time(NULL)));
@@ -96,6 +114,16 @@ void ceparator_layer_update(struct Layer *layer, GContext *ctx){
   for(int i = 0; i+1<size.h/5; ++i){
     graphics_fill_rect(ctx, GRect(0, i*5, size.w, 3), 0, GCornerNone);
   }
+}
+
+TextLayer* local_time_create_with_color(struct RootLayerData* data, GColor color){
+  TextLayer* tl = text_layer_create(GRect(0, 0, LOCAL_TIME_WIDTH, LOCAL_TIME_HIGHT));
+  text_layer_set_font(tl, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
+  text_layer_set_text(tl, data->time);
+  text_layer_set_text_color(tl, color);
+  text_layer_set_text_alignment(tl, GTextAlignmentCenter);
+  text_layer_set_background_color(tl, GColorClear);
+  return tl;
 }
 
 Layer* date_layer_create(GRect frame, struct date_layer *date_l){
@@ -151,7 +179,16 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));  
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Cepartor layer added completely");
-
+  
+  //current time
+  data->time[0] = '\0'; 
+  data->local_time_root = local_time_create_with_color(data, GColorBlack);
+  layer_add_child(date_l->date_root_layer, text_layer_get_layer(data->local_time_root));
+  //data->local_time = local_time_create_with_color(data, GColorWhite);
+  data->local_time = local_time_create_with_color(data, date_l->settings->HighlightColor);
+  layer_add_child(text_layer_get_layer(data->local_time_root), text_layer_get_layer(data->local_time));
+  layer_set_frame(text_layer_get_layer(data->local_time), GRect(-1, -1, LOCAL_TIME_WIDTH, LOCAL_TIME_HIGHT));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Local time layer added completely");
   
   return date_l->date_root_layer;
 }
@@ -184,7 +221,9 @@ void destroy_date_layer(struct date_layer *date_l){
   
   text_layer_destroy(data->date_left);
   text_layer_destroy(data->date_right);
+  
   text_layer_destroy(data->local_time); 
+  text_layer_destroy(data->local_time_root);
   
   layer_destroy(data->ceparator_layer);
   

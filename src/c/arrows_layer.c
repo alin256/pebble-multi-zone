@@ -21,6 +21,7 @@ void graphics_draw_lines(GContext *gtx, GPoint start, GPoint end, int16_t end_x_
 }
 
 void draw_arrows(struct Layer *layer, GContext *ctx){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing an arrow");
   GRect bounds = layer_get_bounds(layer);
   struct ArrowLayerParams *params = layer_get_data(layer);
   graphics_context_set_antialiased(ctx, true);
@@ -52,6 +53,7 @@ void draw_arrows(struct Layer *layer, GContext *ctx){
   //TODO consider drawing multiple bubbles
   //draw time
   //draw_number(ctx, GPoint(layer_get_frame(current.place_layer).origin.x, HEIGHT-radius*2), 12); 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done drawing an arrow");
 }
 
 struct Layer* arrows_layer_create(GRect frame,

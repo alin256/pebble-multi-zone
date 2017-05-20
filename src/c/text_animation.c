@@ -1,4 +1,4 @@
-#ifdef USE_TEXT_ANIMATION
+#ifdef USE_TEXT_ANIMATION_2
 #include <pebble.h>
 #include "text_animation.h"
 

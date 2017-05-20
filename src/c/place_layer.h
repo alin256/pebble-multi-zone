@@ -38,5 +38,6 @@ void update_place(struct place_descrition *place_d, Tuple *city_t, Tuple *offset
 void destroy_place_layer(place_layer *place);
 void update_place_layer(place_layer *place);
 void place_layer_update_time(place_layer *place, time_t *time);
+void place_handle_update_settings(place_layer* pl);
 
 #endif
