@@ -99,18 +99,21 @@ void ceparator_layer_update(struct Layer *layer, GContext *ctx){
 }
 
 Layer* date_layer_create(GRect frame, struct date_layer *date_l){
-  //floating layer
-  Layer *floating_layer = layer_create(GRect(0, 0, date_width, date_height));
-  layer_set_update_proc(floating_layer, draw_cross);
-  
   //root_layer
-  date_l->date_root_layer = layer_create_with_data(frame, sizeof(struct date_layer*));
+  date_l->date_root_layer = layer_create_with_data(frame, sizeof(struct RootLayerData));
+  layer_set_update_proc(date_l->date_root_layer, update_overlay_layer);
+  
   //get the internal data structure
   struct RootLayerData* data = layer_get_data(date_l->date_root_layer);  
   
+  //back refrence
   data->today_root_layer = date_l; 
-  layer_add_child(date_l->date_root_layer, floating_layer);
-  layer_set_update_proc(date_l->date_root_layer, update_overlay_layer);
+  
+  //floating layer
+  data->floating_layer = layer_create(GRect(0, 0, date_width, date_height));
+  layer_set_update_proc(data->floating_layer, draw_cross);
+  layer_add_child(date_l->date_root_layer, data->floating_layer);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Root layer added");
   
   //today
   //image
@@ -124,6 +127,8 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   //layer_add_child(date_l->floating_layer, bitmap_layer_get_layer(date_l->today_layer));
   //TODO check set center
   //layer_set_center(bitmap_layer_get_layer(date_l->today_layer), GPoint((date_width+1)/2+1, (date_height+1)/2));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Today bitmap layer created");
+
   
   //left
   data->date_left = date_text_layer_create_with_font(
@@ -134,16 +139,19 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   data->date_right = date_text_layer_create_with_font(
     GRect(date_width+3, HEIGHT/2, date_width, date_height), fonts_get_system_font(FONT_KEY_GOTHIC_14), date_l->date_root_layer);
   text_layer_set_text_alignment(data->date_right, GTextAlignmentLeft);
-  
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Date texts created");
+
   //ceparator
   data->ceparator_layer = layer_create(GRect(0, 0, 1, HEIGHT));
   layer_set_update_proc(data->ceparator_layer, ceparator_layer_update);
   layer_add_child(data->floating_layer, data->ceparator_layer);
   layer_set_frame(data->ceparator_layer, GRect((date_width+1)/2, 0, 1, HEIGHT));
   //layer_set_frame(date_l->ceparator_layer, GRect(date_width+1, 0, 1, HEIGHT));
-  
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));  
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Cepartor layer added completely");
+
   
   return date_l->date_root_layer;
 }

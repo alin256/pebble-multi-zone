@@ -119,6 +119,7 @@ static void window_load(Window *window) {
   //date
   Layer *date_root = date_layer_create(map_frame, &date_l);
   layer_add_child(map_layer, date_root);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done loading overlay");
 
   
   /////////////////////////////////////////////////////////////////
