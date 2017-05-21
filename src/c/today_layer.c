@@ -144,7 +144,6 @@ void date_layer_handle_minute_tick(struct date_layer *date_l,
 
 void date_layer_handle_update_settings(struct date_layer *date_l){
   struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
-  text_layer_set_text_color(data->local_time, date_l->settings->HighlightColor);
   //text_layer_set_text_color(data->local_time, GColorWhite);
   layer_mark_dirty(date_l->date_root_layer);
 }
@@ -164,7 +163,7 @@ void draw_cross(struct Layer *layer, GContext *ctx){
 }
 
 void update_floating_layer_date(struct Layer *layer, GContext *ctx){
-  draw_cross(layer, ctx);
+  //draw_cross(layer, ctx);
 
   //graphics_context_set_antialiased(ctx, true);
   struct FloatingLayerData *data = layer_get_data(layer);
