@@ -23,7 +23,9 @@ void map_layer_destroy(struct MapLayer* map_layer);
 //void draw_map(struct Layer *layer, GContext *ctx);
 //void draw_earth(GBitmap* three_worlds, struct Layer* map_layer);
 
-void map_layer_redraw_minute(struct MapLayer *map_layer_struct);
+bool map_layer_redraw_required_minute(struct MapLayer *map_layer_struct);
+
+void map_layer_handle_night_pos_update(time_t now, struct MapLayer *map_layer_struct);
 
 GRect map_leyer_get_frame(struct MapLayer* map_layer);
 

@@ -83,15 +83,11 @@ GPoint get_dark_point_map(int time){
 }
 
 //piece of code modified from:
-//davidfg4/pebble-day-night
-void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
+//github: davidfg4/pebble-day-night
+void draw_earth(time_t now, GBitmap* three_worlds, Layer* map_layer) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Appdating map image");
   // ##### calculate the time
-#ifdef PBL_SDK_2
-  int now = (int)time(NULL) + time_offset;
-#else
-  int now = (int)time(NULL);
-#endif
+  //int now = (int)time(NULL);
   //get sun
   struct my_point sun_point = get_sun_point(now);
   int sun_x = sun_point.x;
@@ -142,13 +138,19 @@ void draw_earth(GBitmap* three_worlds, Layer* map_layer) {
 }
 
 
-void map_layer_redraw_minute(struct MapLayer *map_layer_struct){
+void map_layer_handle_night_pos_update(time_t now, struct MapLayer *map_layer_struct){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing map on layer");
+  draw_earth(now, map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done drawing map on layer");
+}
+
+bool map_layer_redraw_required_minute(struct MapLayer *map_layer_struct){
   map_layer_struct->redraw_counter++;
   if (map_layer_struct->redraw_counter >= REDRAW_INTERVAL_MINUTES) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing map on layer");
-    draw_earth(map_layer_struct->three_worlds, bitmap_layer_get_layer(map_layer_struct->map_layer));
     map_layer_struct->redraw_counter = 0;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Done drawing map on layer");
+    return true;
+  }else{
+    return false;
   }
 }
 
@@ -160,7 +162,8 @@ Layer* map_leyer_create(GPoint origin, struct MapLayer* map_layer){
   GRect map_bounds = GRect(origin.x, origin.y, WIDTH, HEIGHT);
   map_layer->map_layer = bitmap_layer_create(map_bounds);
   bitmap_layer_set_bitmap(map_layer->map_layer, map_layer->image);
-  draw_earth(map_layer->three_worlds, bitmap_layer_get_layer(map_layer->map_layer));
+  time_t now = time(NULL);
+  draw_earth(now, map_layer->three_worlds, bitmap_layer_get_layer(map_layer->map_layer));
   map_layer->redraw_counter = 0; //large number
   
   //(map_layer, draw_map);

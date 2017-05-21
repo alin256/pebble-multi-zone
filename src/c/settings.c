@@ -44,8 +44,8 @@ void init_colors_bubble(Settings *settings){
 }
 
 void init_colors_map(Settings *settings){
-  //settings->HighlightColor = GColorWhite;
-  //settings->ShadowColor = GColorLightGray;
+  settings->HighlightColor = GColorWhite;
+  settings->ShadowColor = GColorLightGray;
 }
 
 void init_settings(Settings *settings){

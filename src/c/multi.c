@@ -73,10 +73,12 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
 
   /////////////////////////////////////////////////
   date_layer_handle_minute_tick(&date_l, tick_time, units_changed);
-  
+
   /////////////////////////////////////////////////
-  map_layer_redraw_minute(&map_layer_struct);
-  
+  if (map_layer_redraw_required_minute(&map_layer_struct)){
+      map_layer_handle_night_pos_update(now, &map_layer_struct);
+      date_layer_handle_night_pos_update(&date_l, tick_time, units_changed);
+  }
 }
 
 
@@ -140,7 +142,8 @@ static void window_load(Window *window) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Making refresh");   
   layer_mark_dirty(window_get_root_layer(window));
     
-
+  //TODO this can be avoided perhaps
+  map_layer_struct.redraw_counter = 32000;
     
   //   int32_t x, y;
   //   get_dark_point_map((int) time(NULL), &x, &y);

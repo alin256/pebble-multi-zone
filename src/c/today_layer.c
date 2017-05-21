@@ -14,14 +14,23 @@
 #define HEIGHT 72
 #endif
 
-#define date_width 41
+#define date_width 49
 #define date_height 49
 
-#define DATE_TEXT_WIDTH 20
+#define DATE_TEXT_WIDTH 24
 #define DATE_TEXT_HEIGHT 20
+
+#define DATE_DAY_TOP 22
+#define DATE_MONTH_TOP 10
+#define DATE_TOMOR_SHIFT 25
+
+#define DATE_MONTH_HEIGHT 14
+#define DATE_DAY_HEIGHT 18
 
 #define LOCAL_TIME_HIGHT 20
 #define LOCAL_TIME_WIDTH 5*12
+
+#define half_day_sec  12*60*60
 
 TextLayer* date_text_layer_create_with_font(GRect rect, GFont font, Layer *root){
   TextLayer *cur = text_layer_create(rect);
@@ -38,12 +47,8 @@ TextLayer* date_text_layer_create_with_font(GRect rect, GFont font, Layer *root)
 
 struct RootLayerData{
   struct date_layer *today_root_layer;
-  char dow1[5];
-  char dow2[5];
-  char month1[5];
-  char month2[5];
-  char date1[5];
-  char date2[5];
+  //char dow1[5];
+  //char dow2[5];
   char time[10];
   int old_pos;
   
@@ -65,6 +70,67 @@ struct RootLayerData{
   TextLayer *local_time_root;
 };
 
+struct FloatingLayerData{
+  Settings* settings;
+  char month1[5];
+  char month2[5];
+  char date1[5];
+  char date2[5];
+  bool left_today;
+  bool right_today;
+};
+
+void layer_update_location_to_darkest(struct Layer *layer){
+  layer_set_center(layer, get_dark_point_map(time(NULL)));
+}
+
+// void update_overlay_layer(struct Layer* root_layer, GContext *ctx){
+//   struct RootLayerData *data = layer_get_data(root_layer);
+//   layer_update_location_to_darkest(data->floating_layer);
+//   //layer_mark_dirty(data->floating_layer);
+// }
+
+void floating_layer_handle_night_pos_update(struct Layer *FloatingLayer, 
+                                       struct tm *tick_time)
+{
+  //TODO consider passing now
+  struct FloatingLayerData *data = layer_get_data(FloatingLayer);
+  time_t now = time(NULL);
+  time_t yeste = now - half_day_sec;
+  time_t tomor = now + half_day_sec;
+  //date updates
+  struct tm *yest_tm = gmtime(&yeste);
+  struct tm *tom_tm = gmtime(&tomor);  
+  if (clock_is_timezone_set()){
+    struct tm *local = tick_time;
+    data->left_today =   yest_tm->tm_mday == local->tm_mday;
+    data->right_today =  tom_tm->tm_mday == local->tm_mday;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Shown dates: %d, %d. Today %d", 
+            yest_tm->tm_mday,
+            tom_tm->tm_mday,
+            local->tm_mday); 
+  }else{
+    data->left_today =   false;
+    data->right_today =  false;
+  }
+  //text updates days
+  strftime(data->date1, 5, "%d", yest_tm);
+  strftime(data->date2, 5, "%d", tom_tm);
+  //text updates months
+  strftime(data->month1, 5, "%b", yest_tm);
+  strftime(data->month2, 5, "%b", tom_tm);
+}
+
+void date_layer_handle_night_pos_update(struct date_layer *date_l, 
+                                       struct tm *tick_time, 
+                                       TimeUnits units_changed)
+{
+  struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  floating_layer_handle_night_pos_update(data->floating_layer, tick_time);
+  layer_update_location_to_darkest(data->floating_layer);
+}
+
+
 void date_layer_handle_minute_tick(struct date_layer *date_l, 
                                    struct tm *tick_time, 
                                    TimeUnits units_changed){
@@ -83,33 +149,79 @@ void date_layer_handle_update_settings(struct date_layer *date_l){
   layer_mark_dirty(date_l->date_root_layer);
 }
 
-
-void update_location(struct Layer *layer){
-  layer_set_center(layer, get_dark_point_map(time(NULL)));
-}
-
-void update_overlay_layer(struct Layer* root_layer, GContext *ctx){
-  struct RootLayerData *data = layer_get_data(root_layer);
-  update_location(data->floating_layer);
-}
-
 void draw_cross(struct Layer *layer, GContext *ctx){
   GSize size = layer_get_bounds(layer).size;
+  graphics_context_set_antialiased(ctx, false);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
   graphics_context_set_stroke_color(ctx, GColorRed);
   graphics_context_set_fill_color(ctx, GColorRed);
-  graphics_context_set_antialiased(ctx, false);
   graphics_draw_line(ctx, GPoint(0, 0), GPoint(size.w, size.h));
   graphics_draw_line(ctx, GPoint(0, size.h), GPoint(size.w, 0)); 
-  for(int i = 0; i<=size.w; i+=2){
+  for(int i = 0; i<=size.w+2; i+=2){
     graphics_fill_rect(ctx, GRect(i, 0, 1, size.h), 0, GCornerNone);
   }  
 }
 
+void update_floating_layer_date(struct Layer *layer, GContext *ctx){
+  draw_cross(layer, ctx);
+
+  //graphics_context_set_antialiased(ctx, true);
+  struct FloatingLayerData *data = layer_get_data(layer);
+  GColor yest_color = data->settings->ShadowColor;
+  GColor tom_color = data->settings->ShadowColor;
+  if (data->left_today){
+      yest_color = data->settings->HighlightColor;
+  }
+  if (data->right_today) {
+      tom_color = data->settings->HighlightColor;
+  }
+  
+  //draw yesturaday
+  graphics_context_set_text_color(ctx, yest_color);
+  graphics_draw_text(ctx, data->date1, 
+                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+                     GRect(0, DATE_DAY_TOP, DATE_TEXT_WIDTH, DATE_DAY_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentRight, 
+                     NULL);
+  graphics_draw_text(ctx, data->month1, 
+                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14),
+                     GRect(0, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentRight, 
+                     NULL);  
+  //draw tomorrow
+  graphics_context_set_text_color(ctx, tom_color);
+  graphics_draw_text(ctx, data->date2, 
+                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+                     GRect(DATE_TOMOR_SHIFT, DATE_DAY_TOP, DATE_TEXT_WIDTH, DATE_DAY_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentLeft, 
+                     NULL);
+  graphics_draw_text(ctx, data->month2, 
+                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14),
+                     GRect(DATE_TOMOR_SHIFT, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentLeft, 
+                     NULL);    
+  //draw ceparator
+  graphics_context_set_antialiased(ctx, false);
+}
+
+struct CeparatorLayerData{
+  Settings *settings;
+};
 
 void ceparator_layer_update(struct Layer *layer, GContext *ctx){
+  struct CeparatorLayerData *data = layer_get_data(layer);
   GSize size = layer_get_bounds(layer).size;
-  graphics_context_set_stroke_color(ctx, GColorMagenta);
-  graphics_context_set_fill_color(ctx, GColorMagenta);
+  graphics_context_set_stroke_color(ctx, data->settings->ShadowColor);
+  graphics_context_set_fill_color(ctx, data->settings->ShadowColor);
   graphics_context_set_antialiased(ctx, false);
   for(int i = 0; i+1<size.h/5; ++i){
     graphics_fill_rect(ctx, GRect(0, i*5, size.w, 3), 0, GCornerNone);
@@ -129,7 +241,8 @@ TextLayer* local_time_create_with_color(struct RootLayerData* data, GColor color
 Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   //root_layer
   date_l->date_root_layer = layer_create_with_data(frame, sizeof(struct RootLayerData));
-  layer_set_update_proc(date_l->date_root_layer, update_overlay_layer);
+  //TODO consider uncomenting if logic dictates
+  //layer_set_update_proc(date_l->date_root_layer, update_overlay_layer);
   
   //get the internal data structure
   struct RootLayerData* data = layer_get_data(date_l->date_root_layer);  
@@ -138,9 +251,13 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   data->today_root_layer = date_l; 
   
   //floating layer
-  data->floating_layer = layer_create(GRect(0, 0, date_width, date_height));
-  layer_set_update_proc(data->floating_layer, draw_cross);
+  data->floating_layer = layer_create_with_data(GRect(0, 0, date_width, date_height), 
+                                                sizeof(struct FloatingLayerData));
+  struct FloatingLayerData *float_data = layer_get_data(data->floating_layer);
+  float_data->settings = date_l->settings;
+  layer_set_update_proc(data->floating_layer, update_floating_layer_date);
   layer_add_child(date_l->date_root_layer, data->floating_layer);
+  layer_update_location_to_darkest(data->floating_layer);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Root layer added");
   
   //today
@@ -171,10 +288,13 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Date texts created");
 
   //ceparator
-  data->ceparator_layer = layer_create(GRect(0, 0, 1, HEIGHT));
+  data->ceparator_layer = layer_create_with_data(GRect(0, 0, 1, HEIGHT), sizeof(struct CeparatorLayerData));
+  struct CeparatorLayerData *ceparator_data = layer_get_data(data->ceparator_layer);
+  ceparator_data->settings = date_l->settings;
   layer_set_update_proc(data->ceparator_layer, ceparator_layer_update);
   layer_add_child(data->floating_layer, data->ceparator_layer);
-  layer_set_frame(data->ceparator_layer, GRect((date_width+1)/2, 0, 1, HEIGHT));
+  //TODO compare with set center
+  layer_set_frame(data->ceparator_layer, GRect((date_width)/2, 0, 1, HEIGHT));
   //layer_set_frame(date_l->ceparator_layer, GRect(date_width+1, 0, 1, HEIGHT));
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));
   //layer_add_child(date_l->date_root_layer, text_layer_get_layer(date_l->date_left));  
