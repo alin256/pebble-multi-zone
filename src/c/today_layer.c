@@ -154,6 +154,9 @@ void date_layer_handle_minute_tick(struct date_layer *date_l,
 
 void date_layer_handle_update_settings(struct date_layer *date_l){
   struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  //TODO make more correct behaviour
+  layer_set_hidden(text_layer_get_layer(data->local_time_root), !date_l->settings->allways_show_local_time);
+  layer_set_hidden(data->floating_layer, !date_l->settings->show_date);
   //text_layer_set_text_color(data->local_time, GColorWhite);
   layer_mark_dirty(date_l->date_root_layer);
 }
