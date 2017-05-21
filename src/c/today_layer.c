@@ -25,7 +25,7 @@
 #define DATE_TOMOR_SHIFT 25+2
 
 #define DATE_MONTH_HEIGHT 14
-#define DATE_DAY_HEIGHT 18
+#define DATE_DAY_HEIGHT 20
 
 #define LOCAL_TIME_HIGHT 20
 #define LOCAL_TIME_WIDTH 5*12
@@ -192,14 +192,13 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
   //draw yesturaday
   graphics_context_set_text_color(ctx, yest_color);
   graphics_draw_text(ctx, data->date1, 
-                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
-                     fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+                     fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+//                      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
                      GRect(0, DATE_DAY_TOP, DATE_TEXT_WIDTH, DATE_DAY_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentRight, 
                      NULL);
   graphics_draw_text(ctx, data->month1, 
-                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
                      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(0, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
@@ -208,14 +207,13 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
   //draw tomorrow
   graphics_context_set_text_color(ctx, tom_color);
   graphics_draw_text(ctx, data->date2, 
-                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
-                     fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+                     fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
+                     //fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
                      GRect(DATE_TOMOR_SHIFT, DATE_DAY_TOP, DATE_TEXT_WIDTH, DATE_DAY_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentLeft, 
                      NULL);
   graphics_draw_text(ctx, data->month2, 
-                     //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
                      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(DATE_TOMOR_SHIFT, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
