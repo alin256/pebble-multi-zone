@@ -14,15 +14,15 @@
 #define HEIGHT 72
 #endif
 
-#define date_width 49
+#define date_width 49+4
 #define date_height 49
 
-#define DATE_TEXT_WIDTH 24
+#define DATE_TEXT_WIDTH 24+2
 #define DATE_TEXT_HEIGHT 20
 
 #define DATE_DAY_TOP 22
 #define DATE_MONTH_TOP 10
-#define DATE_TOMOR_SHIFT 25
+#define DATE_TOMOR_SHIFT 25+2
 
 #define DATE_MONTH_HEIGHT 14
 #define DATE_DAY_HEIGHT 18
@@ -98,29 +98,39 @@ void floating_layer_handle_night_pos_update(struct Layer *FloatingLayer,
   time_t now = time(NULL);
   time_t yeste = now - half_day_sec;
   time_t tomor = now + half_day_sec;
-  //date updates
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Now stamp %d; Yesterday stamp %d; Today stamp %d", 
+          (int) now,
+          (int) yeste,
+          (int) tomor);
+  //date updates 
+  //Note! gmtime overrites the same place
   struct tm *yest_tm = gmtime(&yeste);
+  strftime(data->date1, 5, "%d", yest_tm);
+  strftime(data->month1, 5, "%b", yest_tm);
+  uint8_t yesterday = yest_tm->tm_mday;
   struct tm *tom_tm = gmtime(&tomor);  
+  strftime(data->date2, 5, "%d", tom_tm);
+  strftime(data->month2, 5, "%b", tom_tm);
+  uint8_t tomorrow = tom_tm->tm_mday;
   if (clock_is_timezone_set()){
+    //TODO fix
     struct tm *local = tick_time;
-    data->left_today =   yest_tm->tm_mday == local->tm_mday;
-    data->right_today =  tom_tm->tm_mday == local->tm_mday;
+    //struct tm *local = gmtime(&now);
+    data->left_today =   yesterday == local->tm_mday;
+    data->right_today =  tomorrow == local->tm_mday;
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Shown dates: %d, %d. Today %d", 
-            yest_tm->tm_mday,
-            tom_tm->tm_mday,
+            yesterday,
+            tomorrow,
             local->tm_mday); 
   }else{
     data->left_today =   false;
     data->right_today =  false;
   }
-  //text updates days
-  strftime(data->date1, 5, "%d", yest_tm);
-  strftime(data->date2, 5, "%d", tom_tm);
-  //text updates months
-  strftime(data->month1, 5, "%b", yest_tm);
-  strftime(data->month2, 5, "%b", tom_tm);
 }
 
+
+
+//add now as a parameter
 void date_layer_handle_night_pos_update(struct date_layer *date_l, 
                                        struct tm *tick_time, 
                                        TimeUnits units_changed)
@@ -187,7 +197,7 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
                      NULL);
   graphics_draw_text(ctx, data->month1, 
                      //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
-                     fonts_get_system_font(FONT_KEY_GOTHIC_14),
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(0, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentRight, 
@@ -203,7 +213,7 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
                      NULL);
   graphics_draw_text(ctx, data->month2, 
                      //fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS), 
-                     fonts_get_system_font(FONT_KEY_GOTHIC_14),
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(DATE_TOMOR_SHIFT, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentLeft, 
