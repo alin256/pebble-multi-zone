@@ -46,25 +46,25 @@ module.exports = [
       {
         "type": "heading",
         "defaultValue": "Featurs"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "ShowDOW",
-        "label": "Show day of the week for locations",
-        "defaultValue": false
-      },      
+      }      ,
+//       {
+//         "type": "toggle",
+//         "messageKey": "ShowDOW",
+//         "label": "Show day of the week for locations",
+//         "defaultValue": false
+//       },      
       {
         "type": "toggle",
         "messageKey": "ShowDate",
         "label": "Show date on the map",
         "defaultValue": true
       },
-      {
-        "type": "toggle",
-        "messageKey": "ShowLocalTime",
-        "label": "Show local time on the map when it is different from selected places",
-        "defaultValue": false
-      },      
+//       {
+//         "type": "toggle",
+//         "messageKey": "ShowLocalTime",
+//         "label": "Show local time on the map when it is different from selected places",
+//         "defaultValue": false
+//       },      
       {
         "type": "toggle",
         "messageKey": "ForceShowLocalTime",

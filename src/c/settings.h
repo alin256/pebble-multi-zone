@@ -5,7 +5,7 @@
 #include "place_description.h"
 
 
-#define SETTINGS_VERSION 100
+#define SETTINGS_VERSION 97
 
 // Define our settings struct
 typedef struct ClaySettings {
@@ -19,10 +19,11 @@ typedef struct ClaySettings {
 
   struct place_descrition place1;
   struct place_descrition place2;
+  bool places_were_swapped;
 
   //struct place_descrition place_cur;
   //time_t last_update;
-  int8_t show_dow;
+  //int8_t show_dow;
   int8_t show_local_time;
   int8_t allways_show_local_time;
   int8_t show_date;

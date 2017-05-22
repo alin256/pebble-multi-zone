@@ -5,6 +5,7 @@
 
 #define WEEKDAY_S_LEN 2
 #define WEEKDAYS_STRING "SuMoTuWeThFrSa"
+//#define WEEKDAYS_STRING "sumotuwethfrsa"
 
 struct PlaceLayerData{
   place_layer* place_l;
@@ -35,26 +36,27 @@ void place_layer_update_time(place_layer *place, time_t *time){
   
   struct tm *tick_time = gmtime(time);
   
-  bool hour_24 = clock_is_24h_style();
+  //   bool hour_24 = clock_is_24h_style();
   uint16_t pos = 0;
-  if (place->settings->show_dow){
-    strftime(place->watch_str, sizeof(place->watch_str), 
-           "%w", tick_time);
-    pos = str_change_to_dow_abbr(place->watch_str);
-    hour_24 = true;
-  }
+  //   if (place->settings->show_dow){
+  //     strftime(place->watch_str, sizeof(place->watch_str), 
+  //            "%w", tick_time);
+  //     pos = str_change_to_dow_abbr(place->watch_str);
+  //     hour_24 = true;
+  //   }
+    
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "digits = %d ", sizeof(&place->watch_str[pos])); 
+  strftime(&place->watch_str[pos], sizeof(place->watch_str)-pos, "%H:%M", tick_time);
   
-  //TODO check AM/PM
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "digits = %d ", sizeof(&place->watch_str[pos])); 
-  strftime(&place->watch_str[pos], sizeof(place->watch_str)-pos, 
-            hour_24 ? "%H:%M" : "%I:%M", tick_time);
-  if (!hour_24){
-    char tmp[5];
-    strftime(&place->watch_str[pos], sizeof(tmp), 
-            "%P", tick_time);
-    strcat(place->watch_str, tmp);
-  }
-  
+  //   strftime(&place->watch_str[pos], sizeof(place->watch_str)-pos, 
+  //             hour_24 ? "%H:%M" : "%I:%M", tick_time);
+  //   if (!hour_24){
+  //     char tmp[5];
+  //     strftime(&place->watch_str[pos], sizeof(tmp), 
+  //             "%P", tick_time);
+  //     strcat(place->watch_str, tmp);
+  //   }
+    
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Time in %s is updated to %s", place->place->place_name, place->watch_str); 
   layer_mark_dirty(text_layer_get_layer(place->place_time_layer));
 }
@@ -174,11 +176,13 @@ void create_place_layer_default(place_layer *place,
   //updating the layer name
   render_place_name(place, true);
   
+  //TODO add option for squared text
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));
   text_layer_set_text_color(place->place_time_layer, place->settings->TextColor);
   text_layer_set_background_color(place->place_time_layer, GColorClear);
   //text_layer_set_background_color(place->place_time_layer, GColorGreen);
   text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  //text_layer_set_font(place->place_time_layer, fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS));
   text_layer_set_text_alignment(place->place_time_layer, GTextAlignmentCenter);
   text_layer_set_text(place->place_time_layer, place->watch_str);
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_time_layer));

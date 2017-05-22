@@ -27,6 +27,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
   //dict[messageKeys.Place1] = dict[messageKeys.Place1].trim();
   //dict[messageKeys.Place2] = dict[messageKeys.Place2].trim();
   
+  sendAppMessageWithRetries(dict, 0);
+  
   console.log("From UI: " + JSON.stringify(dict));
   fetchLocation(dict[messageKeys.Place1], messageKeys.Place1, messageKeys.P1X, messageKeys.P1Y, messageKeys.ZoneOffset1, 1);
   fetchLocation(dict[messageKeys.Place2], messageKeys.Place2, messageKeys.P2X, messageKeys.P2Y, messageKeys.ZoneOffset2, 2);
@@ -34,7 +36,28 @@ Pebble.addEventListener('webviewclosed', function(e) {
 //                  messageKeys.ZoneOffsetCur, 3);
 });
 
-function doneTimeZone(timeZoneDataString, keyZone, reason, tryNum)
+function sendAppMessageWithRetries(dict, tryNum)
+{
+    Pebble.sendAppMessage(dict, function(e) {
+      //console.log('Sent update for location, id: '+reason);
+      console.log('Message');
+      console.log(JSON.stringify(dict));
+      }, function(e) {
+        if (tryNum<3){
+          console.log('Retrying sending location data!');
+          console.log(JSON.stringify(e));
+          sendAppMessageWithRetries(dict, tryNum+1);
+          //doneTimeZone(timeZoneData, keyZone, reason, tryNum+1);
+        }
+        else{
+          console.log('Failed to send config data!');
+          console.log(JSON.stringify(e));
+        }
+      });
+
+}
+
+function doneTimeZone(timeZoneDataString, keyZone, reason)
 {
     console.log("Recieved time zone: " + timeZoneDataString);
     var timeZoneData = JSON.parse(timeZoneDataString);
@@ -47,20 +70,21 @@ function doneTimeZone(timeZoneDataString, keyZone, reason, tryNum)
       
       //send info back to watch
       dict[messageKeys.UpdateReason] = reason;
+      sendAppMessageWithRetries(dict, 0);
       // Send settings values to watch side
-      Pebble.sendAppMessage(dict, function(e) {
-        console.log('Sent update for location, id: '+reason);
-      }, function(e) {
-        if (tryNum<3){
-          console.log('Retrying sending location data!');
-          console.log(JSON.stringify(e));
-          doneTimeZone(timeZoneData, keyZone, reason, tryNum+1);
-        }
-        else{
-          console.log('Failed to send config data!');
-          console.log(JSON.stringify(e));
-        }
-      });
+      //       Pebble.sendAppMessage(dict, function(e) {
+      //         console.log('Sent update for location, id: '+reason);
+      //       }, function(e) {
+      //         if (tryNum<3){
+      //           console.log('Retrying sending location data!');
+      //           console.log(JSON.stringify(e));
+      //           doneTimeZone(timeZoneData, keyZone, reason, tryNum+1);
+      //         }
+      //         else{
+      //           console.log('Failed to send config data!');
+      //           console.log(JSON.stringify(e));
+      //         }
+      //       });
     }  
 }
 

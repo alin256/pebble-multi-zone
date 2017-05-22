@@ -53,7 +53,7 @@ void init_settings(Settings *settings){
   settings->show_local_time = true;
   settings->allways_show_local_time = false;
   settings->show_date = true;
-  settings->show_dow = false;
+  //settings->show_dow = false;
   init_colors_bubble(settings);
   init_colors_map(settings);
   prv_save_settings(settings);
@@ -87,14 +87,20 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 {
 }
 
-void reorder_places_if_needed(struct place_descrition *place1, struct place_descrition *place2){
-  if (place1->y > place2->y){
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing place swap");
+void reorder_places(struct place_descrition *place1, struct place_descrition *place2){
     struct place_descrition tmp;
     memcpy(&tmp, place1, sizeof(struct place_descrition));
     memcpy(place1, place2, sizeof(struct place_descrition));
     memcpy(place2, &tmp, sizeof(struct place_descrition));    
+}
+
+bool reorder_places_if_needed(struct place_descrition *place1, struct place_descrition *place2){
+  if (place1->y > place2->y){
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing place swap");
+    reorder_places(place1, place2);
+    return true;
   }
+  return false;
 }
 
 // Called when a message is received from PebbleKitJS
@@ -105,26 +111,31 @@ void in_received_handler(DictionaryIterator *received, void *context)
   SettingsHandler *handler = (SettingsHandler*) context;
   Settings *settings = handler->settings;
     
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing local time settings");
   Tuple *show_local_t = dict_find(received, MESSAGE_KEY_ShowLocalTime);
   if (show_local_t){
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing non-existent settings for show time sometimes");
     settings->show_local_time = show_local_t->value->int16;
   }
   
   Tuple *allways_local_t = dict_find(received, MESSAGE_KEY_ForceShowLocalTime);
   if (allways_local_t){
-    settings->allways_show_local_time = show_local_t->value->int16;
+    settings->allways_show_local_time = allways_local_t->value->int16;
   }
-  
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing week day settings");
   Tuple *show_dow_t = dict_find(received, MESSAGE_KEY_ShowDOW);
   if (show_dow_t){
-    settings->show_dow = show_dow_t->value->uint16;
+    //settings->show_dow = show_dow_t->value->uint16;
   }
   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing date settings");  
   Tuple *show_date_t = dict_find(received, MESSAGE_KEY_ShowDate);
   if (show_date_t){
     settings->show_date = show_date_t->value->int16;
   }
-  
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing color settings");  
   Tuple *custom_color_bubles_t = dict_find(received, MESSAGE_KEY_CustomColorBubbles);
   if (custom_color_bubles_t){
     if ( custom_color_bubles_t->value->int16){
@@ -166,7 +177,7 @@ void in_received_handler(DictionaryIterator *received, void *context)
   }
   
  
-  
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing map locations");  
   //if (reason_t)
   //update of locations
   {
@@ -177,6 +188,11 @@ void in_received_handler(DictionaryIterator *received, void *context)
       Tuple *offset_t;
       Tuple *x_t;
       Tuple *y_t;
+      
+      if (settings->places_were_swapped){
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Swapping places back");
+        reorder_places(&settings->place1, &settings->place2);
+      }
 
       //updated place 1
       city_t = dict_find(received, MESSAGE_KEY_Place1);
@@ -193,7 +209,7 @@ void in_received_handler(DictionaryIterator *received, void *context)
       update_place(&settings->place2, city_t, offset_t, x_t, y_t);
       
       //reorder
-      reorder_places_if_needed(&settings->place1, &settings->place2);
+      settings->places_were_swapped = reorder_places_if_needed(&settings->place1, &settings->place2);
 
       
       //GPS

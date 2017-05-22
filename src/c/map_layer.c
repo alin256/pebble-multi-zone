@@ -9,6 +9,7 @@
 //
 #define REDRAW_INTERVAL_MINUTES 15
 
+//#define MAP_DRAW_CEPARATOR
 
 
 struct my_point{
@@ -93,14 +94,17 @@ void draw_earth(time_t now, GBitmap* three_worlds, Layer* map_layer) {
   int sun_x = sun_point.x;
   int sun_y = sun_point.y;
   //get dark
-  struct my_point dark_point = get_dark_point(now);
-  int32_t dark_x_map = dark_point.x * WIDTH / TRIG_MAX_ANGLE;
+  #ifdef MAP_DRAW_CEPARATOR
+    struct my_point dark_point = get_dark_point(now);
+    int32_t dark_x_map = dark_point.x * WIDTH / TRIG_MAX_ANGLE;
+  #endif
   // draw the bitmap
   int x, y;
   for(x = 0; x < WIDTH; x++) {
     int x_angle = (int)((float)TRIG_MAX_ANGLE * (float)x / (float)(WIDTH));
     for(y = 0; y < HEIGHT; y++) {
       //divider between day and night
+      #ifdef MAP_DRAW_CEPARATOR
             if (dark_x_map == x && y%5 > 1){
               #ifdef PBL_BW
               #else
@@ -109,6 +113,7 @@ void draw_earth(time_t now, GBitmap* three_worlds, Layer* map_layer) {
               continue;
               #endif
             }
+      #endif
       int y_angle = (int)((float)TRIG_MAX_ANGLE * (float)y / (float)(HEIGHT * 2)) - TRIG_MAX_ANGLE/4;
       // spherical law of cosines
       float angle = ((float)sin_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);

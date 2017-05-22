@@ -146,8 +146,9 @@ void date_layer_handle_minute_tick(struct date_layer *date_l,
                                    TimeUnits units_changed){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Updateing current time");
   struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
-  strftime(data->time, sizeof(data->time), 
-           clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+  //   strftime(data->time, sizeof(data->time), 
+  //            clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+  strftime(data->time, sizeof(data->time), "%H:%M", tick_time);  
   layer_mark_dirty(text_layer_get_layer(data->local_time));
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done Updateing current time");
 }
