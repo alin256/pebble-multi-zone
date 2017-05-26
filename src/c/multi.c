@@ -59,10 +59,8 @@ static void handle_companion_connection_change(bool connected){
 }
   
 static void handle_connection_change(bool connected){
-  if (connected){
-    update_place_layer(&place1);
-    update_place_layer(&place2);
-  }
+  update_place_layer(&place1);
+  update_place_layer(&place2);
   date_layer_handle_connection_change(&date_l, connected);
 }
 
