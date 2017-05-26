@@ -29,7 +29,7 @@
 #define DATE_DAY_HEIGHT 20
 
 #define LOCAL_TIME_HIGHT 18
-#define LOCAL_TIME_WIDTH 5*12
+#define LOCAL_TIME_WIDTH 5*8
 
 #define half_day_sec  12*60*60
 
@@ -96,7 +96,7 @@ void layer_update_location_to_darkest(struct Layer *layer){
 // }
 
 void floating_layer_handle_night_pos_update(struct Layer *FloatingLayer, 
-                                       struct tm *tick_time)
+                                           struct tm *tick_time)
 {
   //TODO consider passing now
   struct FloatingLayerData *data = layer_get_data(FloatingLayer);
@@ -208,6 +208,9 @@ void date_layer_handle_connection_change(struct date_layer *date_l, bool connect
     text_layer_set_text_color(data->local_time, date_l->settings->ShadowColor);
   }
   date_layer_handle_time_zone_update(date_l);
+  time_t now = time(NULL);
+  struct tm *now_tm = localtime(&now);
+  floating_layer_handle_night_pos_update(data->floating_layer, now_tm);
   layer_mark_dirty(date_l->date_root_layer);
 }
 

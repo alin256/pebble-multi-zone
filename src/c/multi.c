@@ -41,6 +41,7 @@ static SettingsHandler settings_handler;
 static ConnectionHandlers connection_handlers;
   
 static struct date_layer date_l;
+static int local_offset;
 
 static place_layer place1, place2;
 
@@ -65,9 +66,18 @@ static void handle_connection_change(bool connected){
   date_layer_handle_connection_change(&date_l, connected);
 }
 
+
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   time_t now = time(NULL);
   
+  ////////////////////////////////////////////////
+  //update loval time zone if required
+  int new_offset = get_local_time_offset_sec_from_tm(tick_time);
+  if (local_offset != new_offset){
+    handle_connection_change(connection_service_peek_pebble_app_connection());
+    local_offset = new_offset;
+  }
+
   /////////////////////////////////////////////////
   time_t time1 = now + place1.place->offset;
   place_layer_update_time(&place1, &time1);
@@ -84,7 +94,9 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
       map_layer_handle_night_pos_update(now, &map_layer_struct);
       date_layer_handle_night_pos_update(&date_l, tick_time, units_changed);
   }
+  
 }
+
 
 static void move_layers_simple(AnimationProgress progress, void *context){
   // Get the total available screen real-estate
@@ -107,6 +119,9 @@ static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   //GRect bounds = layer_get_bounds(window_layer);
   //TODO make ALL constants variable
+  
+  /////////////////////////////////////////////////////////////////
+  local_offset = get_local_time_offset_sec();
   
   /////////////////////////////////////////////////////////////////
   //load settings

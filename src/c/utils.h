@@ -19,4 +19,5 @@
 
 void layer_set_center(Layer* layer, GPoint point);
 int get_local_time_offset_sec();
+int get_local_time_offset_sec_from_tm(struct tm *time);
 #endif
