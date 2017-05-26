@@ -94,12 +94,12 @@ static void move_layers_simple(AnimationProgress progress, void *context){
   layer_set_frame(place2.place_layer, 
                   GRect(0, bounds.size.h-place_rect.size.h, 
                         place_rect.size.w, place_rect.size.h));
-  //get map rect
-  Layer* map_layer = bitmap_layer_get_layer(map_layer_struct.map_layer);
-  GSize map_size = layer_get_frame(map_layer).size;
-  layer_set_frame(map_layer, 
-                  GRect(0, bounds.size.h-place_rect.size.h/2, 
-                        map_size.w, map_size.h));
+//   //get map rect
+//   Layer* map_layer = bitmap_layer_get_layer(map_layer_struct.map_layer);
+//   GSize map_size = layer_get_frame(map_layer).size;
+//   layer_set_frame(map_layer, 
+//                   GRect(0, bounds.size.h-place_rect.size.h/2, 
+//                         map_size.w, map_size.h));
 }
 
 static void window_load(Window *window) {
