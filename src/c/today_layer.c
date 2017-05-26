@@ -20,8 +20,9 @@
 #define DATE_TEXT_WIDTH 24+2
 #define DATE_TEXT_HEIGHT 20
 
-#define DATE_DAY_TOP 22
+#define DATE_DOW_TOP -2
 #define DATE_MONTH_TOP 10
+#define DATE_DAY_TOP 22
 #define DATE_TOMOR_SHIFT 25+2
 
 #define DATE_MONTH_HEIGHT 14
@@ -76,6 +77,8 @@ struct FloatingLayerData{
   char month2[5];
   char date1[5];
   char date2[5];
+  char dow1[5];
+  char dow2[5];
   bool left_today;
   bool right_today;
 };
@@ -107,10 +110,12 @@ void floating_layer_handle_night_pos_update(struct Layer *FloatingLayer,
   struct tm *yest_tm = gmtime(&yeste);
   strftime(data->date1, 5, "%d", yest_tm);
   strftime(data->month1, 5, "%b", yest_tm);
+  strftime(data->dow1, 5, "%a", yest_tm);
   uint8_t yesterday = yest_tm->tm_mday;
   struct tm *tom_tm = gmtime(&tomor);  
   strftime(data->date2, 5, "%d", tom_tm);
   strftime(data->month2, 5, "%b", tom_tm);
+  strftime(data->dow2, 5, "%a", tom_tm);
   uint8_t tomorrow = tom_tm->tm_mday;
   if (clock_is_timezone_set()){
     //TODO fix
@@ -205,6 +210,12 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
                      GTextOverflowModeFill, 
                      GTextAlignmentRight, 
                      NULL);  
+  graphics_draw_text(ctx, data->dow1, 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                     GRect(0, DATE_DOW_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentRight, 
+                     NULL);  
   //draw tomorrow
   graphics_context_set_text_color(ctx, tom_color);
   graphics_draw_text(ctx, data->date2, 
@@ -217,6 +228,12 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
   graphics_draw_text(ctx, data->month2, 
                      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(DATE_TOMOR_SHIFT, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
+                     GTextOverflowModeFill, 
+                     GTextAlignmentLeft, 
+                     NULL);    
+  graphics_draw_text(ctx, data->dow2, 
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                     GRect(DATE_TOMOR_SHIFT, DATE_DOW_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentLeft, 
                      NULL);    
