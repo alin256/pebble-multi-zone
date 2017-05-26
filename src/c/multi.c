@@ -106,11 +106,15 @@ static void move_layers_simple(AnimationProgress progress, void *context){
   layer_set_frame(place2.place_layer, 
                   GRect(0, bounds.size.h-place_rect.size.h, 
                         place_rect.size.w, place_rect.size.h));
-//   //get map rect
-//   Layer* map_layer = bitmap_layer_get_layer(map_layer_struct.map_layer);
-//   GSize map_size = layer_get_frame(map_layer).size;
-//   layer_set_frame(map_layer, 
-//                   GRect(0, bounds.size.h-place_rect.size.h/2, 
+  //get map rect
+  //Layer* map_layer = bitmap_layer_get_layer(map_layer_struct.map_layer);
+  GRect map_rect = map_leyer_get_frame(&map_layer_struct);
+  GSize map_size = map_rect.size;
+  map_leyer_set_frame(&map_layer_struct, 
+                      GRect(0, bounds.size.h-place_rect.size.h-map_size.h, 
+                            map_size.w, map_size.h));
+//  map_layer_set_frame&map_layer_struct, 
+//                   GRect(0, bounds.size.h-place_rect.size.h, 
 //                         map_size.w, map_size.h));
 }
 
