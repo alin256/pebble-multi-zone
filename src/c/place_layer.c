@@ -181,7 +181,7 @@ void create_place_layer_default(place_layer *place,
   
   bounds = layer_get_bounds(place->place_layer);
   
-  place->place_name_layer = text_layer_create(GRect(0, 0, bounds.size.w, 16));
+  place->place_name_layer = text_layer_create(GRect(2, 0, bounds.size.w -4 , 16));
   text_layer_set_text_color(place->place_name_layer, place->settings->TextColor);
   text_layer_set_background_color(place->place_name_layer, GColorClear);
   //text_layer_set_background_color(place->place_name_layer, GColorBlue);
