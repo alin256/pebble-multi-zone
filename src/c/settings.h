@@ -5,7 +5,7 @@
 #include "place_description.h"
 
 
-#define SETTINGS_VERSION 97
+#define SETTINGS_VERSION 100
 
 // Define our settings struct
 typedef struct ClaySettings {
