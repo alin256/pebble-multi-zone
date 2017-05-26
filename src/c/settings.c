@@ -51,7 +51,7 @@ void init_colors_map(Settings *settings){
 void init_settings(Settings *settings){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "No settings found. Applying default setting.");
   settings->show_local_time = true;
-  settings->allways_show_local_time = false;
+  settings->allways_show_local_time = true;
   settings->show_date = true;
   //settings->show_dow = false;
   init_colors_bubble(settings);
@@ -126,7 +126,7 @@ void in_received_handler(DictionaryIterator *received, void *context)
   APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing week day settings");
   Tuple *show_dow_t = dict_find(received, MESSAGE_KEY_ShowDOW);
   if (show_dow_t){
-    //settings->show_dow = show_dow_t->value->uint16;
+    settings->show_dow = show_dow_t->value->uint16;
   }
   
   APP_LOG(APP_LOG_LEVEL_DEBUG, "parsing date settings");  

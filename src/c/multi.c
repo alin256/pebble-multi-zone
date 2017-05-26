@@ -36,6 +36,8 @@ const time_t OUTDATE_TIME = 1200;
 // An instance of the struct
 static Settings settings;
 static SettingsHandler settings_handler;
+
+static ConnectionHandlers connection_handlers;
   
 static struct date_layer date_l;
 
@@ -53,11 +55,15 @@ static void handle_update_settings(){
   layer_mark_dirty(window_get_root_layer(s_window));
 }
 
+static void handle_companion_connection_change(bool connected){
+}
+  
 static void handle_connection_change(bool connected){
   if (connected){
-    //TODO improve logic
-    //request_locaion();
+    update_place_layer(&place1);
+    update_place_layer(&place2);
   }
+  date_layer_handle_connection_change(&date_l, connected);
 }
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
@@ -207,14 +213,18 @@ static void init(void) {
   const int outbox_size = 512;
   app_message_open(inbox_size, outbox_size);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
-  bluetooth_connection_service_subscribe(handle_connection_change);
+  //bluetooth_connection_service_subscribe(handle_connection_change);
+  connection_handlers.pebble_app_connection_handler = handle_connection_change;
+  connection_handlers.pebblekit_connection_handler = handle_companion_connection_change;
+  connection_service_subscribe(connection_handlers);
 }
 
 static void deinit(void) {
   prv_save_settings(&settings);
   app_message_deregister_callbacks();
   tick_timer_service_unsubscribe();
-  bluetooth_connection_service_unsubscribe();
+  //bluetooth_connection_service_unsubscribe();
+  connection_service_unsubscribe();
   window_destroy(s_window);
 }
 

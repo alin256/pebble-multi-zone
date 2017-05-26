@@ -18,5 +18,5 @@
 
 
 void layer_set_center(Layer* layer, GPoint point);
-
+int get_local_time_offset_sec();
 #endif

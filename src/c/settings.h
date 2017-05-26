@@ -23,7 +23,7 @@ typedef struct ClaySettings {
 
   //struct place_descrition place_cur;
   //time_t last_update;
-  //int8_t show_dow;
+  int8_t show_dow;
   int8_t show_local_time;
   int8_t allways_show_local_time;
   int8_t show_date;

@@ -28,7 +28,7 @@
 #define DATE_MONTH_HEIGHT 14
 #define DATE_DAY_HEIGHT 20
 
-#define LOCAL_TIME_HIGHT 20
+#define LOCAL_TIME_HIGHT 18
 #define LOCAL_TIME_WIDTH 5*12
 
 #define half_day_sec  12*60*60
@@ -51,6 +51,7 @@ struct RootLayerData{
   //char dow1[5];
   //char dow2[5];
   char time[10];
+  bool connected;
   int old_pos;
   
   //bitmap pointers
@@ -73,6 +74,7 @@ struct RootLayerData{
 
 struct FloatingLayerData{
   Settings* settings;
+  struct RootLayerData *root_data;
   char month1[5];
   char month2[5];
   char date1[5];
@@ -135,7 +137,7 @@ void floating_layer_handle_night_pos_update(struct Layer *FloatingLayer,
 
 
 
-//add now as a parameter
+//TODO add now as a parameter
 void date_layer_handle_night_pos_update(struct date_layer *date_l, 
                                        struct tm *tick_time, 
                                        TimeUnits units_changed)
@@ -158,11 +160,64 @@ void date_layer_handle_minute_tick(struct date_layer *date_l,
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done Updateing current time");
 }
 
+bool local_time_is_hidden(struct date_layer *date_l, int local_offset){
+  if (!date_l->settings->show_local_time){
+    return true;
+  }
+  if (date_l->settings->allways_show_local_time){
+    return false;
+  }
+  //normal situation 
+  if (date_l->settings->place1.offset == local_offset ||
+      date_l->settings->place2.offset == local_offset){
+    return true;
+  }
+  return false;
+}
+
+void date_layer_handle_time_zone_update(struct date_layer *date_l){
+  GSize root_bounds = layer_get_bounds(date_l->date_root_layer).size;
+  struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  Layer *time_root = text_layer_get_layer(data->local_time_root);
+  GSize time_bounds = layer_get_bounds(time_root).size;
+  int local_offset_sec = get_local_time_offset_sec();
+  
+  bool local_time_hidden = local_time_is_hidden(date_l, local_offset_sec);
+  layer_set_hidden(time_root, local_time_hidden);
+  if (local_time_hidden){
+    return;
+  }
+
+  int relative_pos_sec = 12*3600 + local_offset_sec;
+  int16_t map_pos = (relative_pos_sec * root_bounds.w) / (3600*24);
+  if (map_pos > root_bounds.w - time_bounds.w/2){
+    map_pos = root_bounds.w - time_bounds.w/2;
+  }
+  if (map_pos < time_bounds.w/2){
+    map_pos = time_bounds.w/2;
+  }
+  layer_set_center(time_root, GPoint(map_pos, root_bounds.h - time_bounds.h/2 - 1));
+}
+
+void date_layer_handle_connection_change(struct date_layer *date_l, bool connected){
+  struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
+  data->connected = connected;
+  if (connected){
+    text_layer_set_text_color(data->local_time, date_l->settings->HighlightColor);
+  }else{
+    text_layer_set_text_color(data->local_time, date_l->settings->ShadowColor);
+  }
+  date_layer_handle_time_zone_update(date_l);
+  layer_mark_dirty(date_l->date_root_layer);
+}
+
+
 void date_layer_handle_update_settings(struct date_layer *date_l){
   struct RootLayerData *data = layer_get_data(date_l->date_root_layer);
   //TODO make more correct behaviour
   layer_set_hidden(text_layer_get_layer(data->local_time_root), !date_l->settings->allways_show_local_time);
   layer_set_hidden(data->floating_layer, !date_l->settings->show_date);
+  date_layer_handle_time_zone_update(date_l);
   //text_layer_set_text_color(data->local_time, GColorWhite);
   layer_mark_dirty(date_l->date_root_layer);
 }
@@ -188,11 +243,13 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
   struct FloatingLayerData *data = layer_get_data(layer);
   GColor yest_color = data->settings->ShadowColor;
   GColor tom_color = data->settings->ShadowColor;
-  if (data->left_today){
-      yest_color = data->settings->HighlightColor;
-  }
-  if (data->right_today) {
-      tom_color = data->settings->HighlightColor;
+  if (data->root_data->connected){
+    if (data->left_today){
+        yest_color = data->settings->HighlightColor;
+    }
+    if (data->right_today) {
+        tom_color = data->settings->HighlightColor;
+    }
   }
   
   //draw yesturaday
@@ -209,13 +266,15 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
                      GRect(0, DATE_MONTH_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentRight, 
-                     NULL);  
+                     NULL);
+  if (data->settings->show_dow){
   graphics_draw_text(ctx, data->dow1, 
                      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(0, DATE_DOW_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentRight, 
                      NULL);  
+  }
   //draw tomorrow
   graphics_context_set_text_color(ctx, tom_color);
   graphics_draw_text(ctx, data->date2, 
@@ -231,12 +290,14 @@ void update_floating_layer_date(struct Layer *layer, GContext *ctx){
                      GTextOverflowModeFill, 
                      GTextAlignmentLeft, 
                      NULL);    
+  if (data->settings->show_dow){
   graphics_draw_text(ctx, data->dow2, 
                      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(DATE_TOMOR_SHIFT, DATE_DOW_TOP, DATE_TEXT_WIDTH, DATE_MONTH_HEIGHT), 
                      GTextOverflowModeFill, 
                      GTextAlignmentLeft, 
                      NULL);    
+  }
   //draw ceparator
   graphics_context_set_antialiased(ctx, false);
 }
@@ -258,7 +319,7 @@ void ceparator_layer_update(struct Layer *layer, GContext *ctx){
 
 TextLayer* local_time_create_with_color(struct RootLayerData* data, GColor color){
   TextLayer* tl = text_layer_create(GRect(0, 0, LOCAL_TIME_WIDTH, LOCAL_TIME_HIGHT));
-  text_layer_set_font(tl, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
+  text_layer_set_font(tl, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text(tl, data->time);
   text_layer_set_text_color(tl, color);
   text_layer_set_text_alignment(tl, GTextAlignmentCenter);
@@ -283,6 +344,7 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
                                                 sizeof(struct FloatingLayerData));
   struct FloatingLayerData *float_data = layer_get_data(data->floating_layer);
   float_data->settings = date_l->settings;
+  float_data->root_data = data;
   layer_set_update_proc(data->floating_layer, update_floating_layer_date);
   layer_add_child(date_l->date_root_layer, data->floating_layer);
   layer_update_location_to_darkest(data->floating_layer);
@@ -336,7 +398,12 @@ Layer* date_layer_create(GRect frame, struct date_layer *date_l){
   data->local_time = local_time_create_with_color(data, date_l->settings->HighlightColor);
   layer_add_child(text_layer_get_layer(data->local_time_root), text_layer_get_layer(data->local_time));
   layer_set_frame(text_layer_get_layer(data->local_time), GRect(-1, -1, LOCAL_TIME_WIDTH, LOCAL_TIME_HIGHT));
+  
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Local time layer added completely");
+  
+  date_layer_handle_update_settings(date_l);
+  //date_layer_handle_time_zone_update(date_l);
+  date_layer_handle_connection_change(date_l, connection_service_peek_pebble_app_connection());
   
   return date_l->date_root_layer;
 }

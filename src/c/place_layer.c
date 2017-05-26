@@ -2,10 +2,13 @@
 #include "place_layer.h"
 #include "place_description.h"
 #include "settings.h"
+#include "src/c/utils.h"
 
 #define WEEKDAY_S_LEN 2
+#ifndef WEEKDAYS_STRING
 #define WEEKDAYS_STRING "SuMoTuWeThFrSa"
 //#define WEEKDAYS_STRING "sumotuwethfrsa"
+#endif
 
 struct PlaceLayerData{
   place_layer* place_l;
@@ -87,21 +90,33 @@ void draw_place_bubble(struct Layer *layer, GContext *ctx){
   graphics_draw_round_rect(ctx, bounds, place->radius);
 }
 
-void render_place_name(place_layer *place, bool show_offset){
+void render_place_name(place_layer *place, bool show_offset, bool offset_from_gmt){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Updating place name. Show GMT %d", offset_from_gmt);
+  layer_mark_dirty(text_layer_get_layer(place->place_name_layer));
   strcpy(place->place_str, place->place->place_name);
   if (show_offset){
+    int rel_offset = 0;
+    if (offset_from_gmt){
+      rel_offset = place->place->offset;
+    }
+    else{
+      int local_offset_sec = get_local_time_offset_sec();
+      rel_offset = place->place->offset - local_offset_sec;
+      if (rel_offset == 0){
+        return;
+      }
+    }
+
     if (strlen(place->place_str) > 0){
       strcat(place->place_str, ", ");    
     }
+    
+    if (offset_from_gmt){
+      strcat(place->place_str, "GMT");    
+    }
+
+    
     char offset_str[20];
-    time_t now_t = time(NULL);    
-    struct tm* l_time_tm = localtime(&now_t);
-    int local_offset = l_time_tm->tm_gmtoff;
-    int summer_time_offset = l_time_tm->tm_isdst*3600;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "local offset: %d", local_offset); 
-    int rel_offset = place->place->offset - local_offset - summer_time_offset;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative offset for %s: %d - (%d) - %d = %d", place->place->place_name, 
-            place->place->offset, local_offset, summer_time_offset, rel_offset);
     int offset_hours = rel_offset / 3600;
     int offset_min = rel_offset % 3600 / 60;
     //some weird time zone
@@ -125,10 +140,13 @@ void render_place_name(place_layer *place, bool show_offset){
       snprintf(offset_str, 20, "%d", offset_hours);      
     }
     strcat(place->place_str, offset_str);
-    if (offset_hours == 1 || offset_hours == -1){
-      strcat(place->place_str, "HR");
-    }else{
-      strcat(place->place_str, "HRS");
+    
+    if (!offset_from_gmt){
+      if (offset_hours == 1 || offset_hours == -1){
+        strcat(place->place_str, "HR");
+      }else{
+        strcat(place->place_str, "HRS");
+      }
     }
   }
 }
@@ -137,7 +155,7 @@ void update_place_layer(place_layer *place){
   //snprintf(place->watch_str, sizeof(place->watch_str), "%d", (int)place->place->offset);
   //text_layer_set_text(place->place_time_layer, place->watch_str);
   //text_layer_set_text(place->place_name_layer, place->place->place_name);
-  render_place_name(place, true);
+  render_place_name(place, true, !connection_service_peek_pebble_app_connection());
 }
 
 void create_place_layer_default(place_layer *place, 
@@ -174,7 +192,7 @@ void create_place_layer_default(place_layer *place,
   layer_add_child(place->place_layer, text_layer_get_layer(place->place_name_layer));
 
   //updating the layer name
-  render_place_name(place, true);
+  update_place_layer(place);
   
   //TODO add option for squared text
   place->place_time_layer = text_layer_create(GRect(0, 12, bounds.size.w, 34));

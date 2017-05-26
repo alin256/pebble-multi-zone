@@ -1,6 +1,23 @@
 #include <pebble.h>
 #include "utils.h"
 
+int get_local_time_offset_sec(){
+  if (clock_is_timezone_set()){
+     time_t now_t = time(NULL);    
+     struct tm* l_time_tm = localtime(&now_t);
+     int local_offset = l_time_tm->tm_gmtoff;
+     int summer_time_offset = l_time_tm->tm_isdst*3600;
+    int rel_offset = local_offset + summer_time_offset;
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Relative offset for here: %d + %d = %d",  
+             local_offset, summer_time_offset, rel_offset);
+    return rel_offset;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
 
 void layer_set_center(Layer* layer, GPoint p){
   GSize size = layer_get_frame(layer).size;
