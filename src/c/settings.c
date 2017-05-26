@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include "settings.h"
+#include "src/c/utils.h"
 
 
 // Persistent storage key
@@ -51,11 +52,16 @@ void init_colors_map(Settings *settings){
 void init_settings(Settings *settings){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "No settings found. Applying default setting.");
   settings->show_local_time = true;
-  settings->allways_show_local_time = true;
+  settings->allways_show_local_time = false;
   settings->show_date = true;
-  //settings->show_dow = false;
+  settings->show_dow = true;
   init_colors_bubble(settings);
   init_colors_map(settings);
+  int local_offset = get_local_time_offset_sec();
+  strcpy(settings->place1.place_name, "New version");
+  settings->place1.offset = local_offset;
+  strcpy(settings->place2.place_name, "Upd. settings");
+  settings->place2.offset = local_offset;
   prv_save_settings(settings);
 }
 
