@@ -14,11 +14,13 @@ int16_t get_x_within_bounds(int16_t old_x, GRect bounds, int16_t radius){
   return x;
 }
 
+
 void graphics_draw_lines(GContext *gtx, GPoint start, GPoint end, int16_t end_x_range){
   for (int16_t i = 0 ;i<=end_x_range; i+=2){
     graphics_draw_line(gtx, start, GPoint(end.x + i, end.y));
   }
 }
+
 
 void draw_arrows(struct Layer *layer, GContext *ctx){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Drawing an arrow");
