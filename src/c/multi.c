@@ -22,6 +22,7 @@
 #include "arrows_layer.h"
 #include "today_layer.h"
 
+
 //window
 static Window *s_window;  
 
@@ -85,6 +86,21 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed){
   }
 }
 
+static void move_layers_simple(AnimationProgress progress, void *context){
+  // Get the total available screen real-estate
+  GRect bounds = layer_get_unobstructed_bounds(window_get_root_layer(s_window));
+  //Get frame of bubbles
+  GRect place_rect = layer_get_frame(place2.place_layer);
+  layer_set_frame(place2.place_layer, 
+                  GRect(0, bounds.size.h-place_rect.size.h, 
+                        place_rect.size.w, place_rect.size.h));
+  //get map rect
+  Layer* map_layer = bitmap_layer_get_layer(map_layer_struct.map_layer);
+  GSize map_size = layer_get_frame(map_layer).size;
+  layer_set_frame(map_layer, 
+                  GRect(0, bounds.size.h-place_rect.size.h/2, 
+                        map_size.w, map_size.h));
+}
 
 static void window_load(Window *window) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Performing window load");
@@ -148,23 +164,15 @@ static void window_load(Window *window) {
     
   //TODO this can be avoided perhaps
   map_layer_struct.redraw_counter = 32000;
-    
-  //   int32_t x, y;
-  //   get_dark_point_map((int) time(NULL), &x, &y);
-  //   layer_set_center(date_root, x, y);
-    
-  //floating layer 
-  //create_place_layer_floating(&current, &settings.place_cur, bitmap_layer_get_layer( map_layer));
-  //layer_set_hidden(current.place_layer, true);
-  
-  
+
   //TODO move logic to outcide
-  //   //event animation API 4.0
-  //   UnobstructedAreaHandlers handlers = {
+  //event animation API 4.0
+  UnobstructedAreaHandlers handlers = {
   //     .will_change = prv_unobstructed_will_change,
-  //     .change = prv_unobstructed_change
-  //   };
-  //   unobstructed_area_service_subscribe(handlers, NULL);
+    .change = move_layers_simple
+  };
+  unobstructed_area_service_subscribe(handlers, NULL);
+  move_layers_simple(0, NULL);
 }
 
 static void window_unload(Window *window) {
@@ -181,7 +189,7 @@ static void window_unload(Window *window) {
     
   map_layer_destroy(&map_layer_struct);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroyed map");  
-  //unobstructed_area_service_unsubscribe();
+  unobstructed_area_service_unsubscribe();
 }
 
 
